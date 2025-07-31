@@ -70,6 +70,17 @@ const deleteProduct = async (id) => {
   return result.rows[0];
 };
 
+const decrementStock = async (productId, quantity) => {
+  const result = await db.query(
+    `UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND stock_quantity >= $1`,
+    [quantity, productId]
+  );
+
+  if (result.rowCount === 0) {
+    throw new Error(`Não foi possível atualizar o stock do produto com ID ${productId}`);
+  }
+};
+
 module.exports = {
   listProducts,
   findProductById,
@@ -77,5 +88,6 @@ module.exports = {
   updateProduct,
   deleteProduct,
   findProductByName,
-  findProductBySku
+  findProductBySku,
+  decrementStock
 };

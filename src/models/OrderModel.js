@@ -36,17 +36,16 @@ const deleteOrder = async (orderId) => {
   return result.rows[0];
 };
 
-
-
-const createOrder = async (userId, addressId, totalPrice, paymentMethod = 'pendente') => {
+const createOrder = async (userId, addressId, totalPrice, paymentMethod = 'pendente', couponCode = null) => {
   const result = await db.query(
-    `INSERT INTO orders (user_id, address_id, total_price, status)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO orders (user_id, address_id, total_price, status, coupon_code)
+     VALUES ($1, $2, $3, $4, $5)
      RETURNING *`,
-    [userId, addressId, totalPrice, paymentMethod]
+    [userId, addressId, totalPrice, paymentMethod, couponCode]
   );
   return result.rows[0];
 };
+
 
 const addOrderItem = async (orderId, productId, quantity, price) => {
   await db.query(
