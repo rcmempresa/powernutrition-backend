@@ -81,7 +81,27 @@ const deleteUserById = async (id) => {
   return result.rows[0];
 };
 
+const deleteCartsByUserId = async (userId) => {
+  try {
+    // Esta query elimina todos os registos na tabela 'carts' onde user_id corresponde ao userId
+    const result = await db.query('DELETE FROM carts WHERE user_id = $1 RETURNING *', [userId]);
+    return result.rows; // Retorna os carrinhos eliminados (opcional, para logging/feedback)
+  } catch (error) {
+    console.error('Erro no modelo ao eliminar carrinhos por utilizador:', error);
+    throw error; // Propaga o erro para o controlador
+  }
+};
 
+const deleteAddressesByUserId = async (userId) => {
+  try {
+    // Esta query elimina todos os registos na tabela 'addresses' onde user_id corresponde ao userId
+    const result = await db.query('DELETE FROM addresses WHERE user_id = $1 RETURNING *', [userId]);
+    return result.rows; // Retorna os endereços eliminados (opcional)
+  } catch (error) {
+    console.error('Erro no modelo ao eliminar endereços por utilizador:', error);
+    throw error; // Propaga o erro para o controlador
+  }
+};
 
 
 module.exports = {
@@ -91,5 +111,7 @@ module.exports = {
   getAllUsers,
   getUserById,
   updateUserById,
-  deleteUserById
+  deleteUserById,
+  deleteCartsByUserId,
+  deleteAddressesByUserId
 };

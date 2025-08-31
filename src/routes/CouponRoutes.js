@@ -14,4 +14,14 @@ router.get('/usage/:code', couponController.countCouponUsage);
 // Listar todos os cupões
 router.get('/listar', couponController.listCoupons);
 
+// --- NOVA ROTA para aplicar um cupão e calcular o desconto ---
+router.post('/apply', couponController.applyCoupon);
+
+// Rota para atualizar um cupão existente
+router.put('/atualizar/:id', couponController.updateCoupon);
+
+// Rota para eliminar um cupão
+router.delete('/remover/:id', couponController.deleteCoupon);
+
+
 module.exports = router;

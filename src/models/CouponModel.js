@@ -31,7 +31,29 @@ const CouponModel = {
   listCoupons: async () => {
     const result = await db.query('SELECT * FROM coupons');
     return result.rows;
-  }
+  },
+
+  // **NOVA FUNÇÃO: Atualizar Cupão**
+  updateCoupon: async (id, couponData) => {
+    const { code, discount_percentage, athlete_name } = couponData;
+    const result = await db.query(
+      `UPDATE coupons
+       SET code = $1, discount_percentage = $2, athlete_name = $3
+       WHERE id = $4
+       RETURNING *`,
+      [code, discount_percentage, athlete_name, id]
+    );
+    return result.rows[0];
+  },
+
+  // **NOVA FUNÇÃO: Eliminar Cupão**
+  deleteCoupon: async (id) => {
+    const result = await db.query(
+      'DELETE FROM coupons WHERE id = $1',
+      [id]
+    );
+    return result.rowCount;
+  },
 };
 
 module.exports = CouponModel;

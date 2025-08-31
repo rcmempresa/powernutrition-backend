@@ -1,8 +1,12 @@
 const express = require('express');
 const app = express();
-const cors = require('cors'); // <--- Importe o módulo 'cors' aqui
+const cors = require('cors');
+const multer = require('multer'); // ✨ Adicione Multer ✨
+const path = require('path');     // ✨ Adicione path ✨
+const fs = require('fs');         // ✨ Adicione fs ✨
 
 // Importações das suas rotas
+// ... (mantenha todas as suas importações existentes)
 const userRoutes = require('./routes/UserRoutes');
 const productRoutes = require('./routes/ProductRoutes');
 const cartRoutes = require('./routes/CartRoutes');
@@ -12,14 +16,54 @@ const addressRoutes = require('./routes/AddressRoutes');
 const paymentRoutes = require('./routes/PaymentRoutes');
 const productImageRoutes = require('./routes/ProductImageRoutes');
 const couponRoutes = require('./routes/CouponRoutes');
-const categoryRoutes = require('./routes/CategoryRoutes'); // Sua rota de categorias
+const dashboardRoutes = require('./routes/DashboardRoutes');
+const categoryRoutes = require('./routes/CategoryRoutes');
+const flavorRoutes = require('./routes/FlavorRoutes');
+const pagamentoMultibanco = require('./routes/pagamentoMultibanco');
+const pagamentoMbway = require('./routes/pagamentoMbway');
+const pagamentoCC = require('./routes/pagamentoCC');
+const notificacoes = require('./routes/notificacoes')
+const imagensSecundarias = require('./routes/imagensSecundarias');
+const reviewsRouter = require('./routes/reviews.js');
+const favoriteRoutes = require('./routes/favoriteRoutes.js');
+const contactRoutes = require('./routes/ContactRoutes');
 
-require('dotenv').config(); // Para carregar variáveis de ambiente
+require('dotenv').config();
 
-app.use(express.json()); // Middleware para parsear JSON do corpo das requisições
+app.use(express.json());
+app.use(cors());
 
-// --- Middleware CORS: Crucial para permitir requisições do seu frontend ---
-app.use(cors()); // <--- Adicione esta linha AQUI! Ela deve vir antes das suas rotas.
+// ✨ Lógica de configuração do Multer e da rota de upload de imagens ✨
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ storage: storage });
+
+// Nova rota para o upload de imagens
+app.post('/api/images/upload', upload.single('image'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ message: 'Nenhum ficheiro foi enviado.' });
+    }
+
+    // Retorna o URL completo da imagem guardada
+    const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    res.status(200).json({ url: imageUrl });
+});
+
+// Serve os ficheiros estáticos da pasta de uploads
+app.use('/uploads', express.static(uploadDir));
 
 // Rotas da API
 app.use('/api/users', userRoutes);
@@ -31,7 +75,17 @@ app.use('/api/addresses', addressRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/product-images', productImageRoutes);
 app.use('/api/cupoes', couponRoutes);
-app.use('/api/categories', categoryRoutes); // A rota para categorias
+app.use('/api/categories', categoryRoutes);
+app.use('/api/flavors', flavorRoutes);
+app.use('/api/referencia/multibanco',pagamentoMultibanco);
+app.use('/api/referencia/mbway',pagamentoMbway);
+app.use('/api/referencia/cc',pagamentoCC);
+app.use('/api/easypay',notificacoes);
+app.use('/api/product_images',imagensSecundarias);
+app.use('/api/reviews', reviewsRouter); 
+app.use('/api/favorites', favoriteRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Iniciar servidor
 const PORT = process.env.PORT || 3000;

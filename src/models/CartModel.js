@@ -77,7 +77,7 @@ const findCartByUserId = async (userId) => {
     'SELECT * FROM carts WHERE user_id = $1',
     [userId]
   );
-  return result.rows[0]; // retorna o carrinho ou undefined se não existir
+  return result.rows[0]; 
 };
 
 module.exports = {

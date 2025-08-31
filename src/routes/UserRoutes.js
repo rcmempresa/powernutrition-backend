@@ -11,6 +11,7 @@ router.get('/listar', userMiddleware, adminMiddleware, userController.getAllUser
 router.get('/listar/:id', userMiddleware, userController.getUserById);
 router.put('/atualizar/:id', userMiddleware, userController.updateUser);
 router.delete('/remover/:id', userMiddleware, adminMiddleware, userController.deleteUser);
+router.get('/:userId/orders', userMiddleware,adminMiddleware, userController.getUserOrders);
 
 
 
