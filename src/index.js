@@ -26,7 +26,7 @@ const notificacoes = require('./routes/notificacoes')
 const imagensSecundarias = require('./routes/imagensSecundarias');
 const reviewsRouter = require('./routes/reviews');
 const favoriteRoutes = require('./routes/favoriteRoutes');
-const contactRoutes = require('./routes/ContactRoutes');
+const contactRoutes = require('./routes/contactRoutes');
 
 require('dotenv').config();
 
