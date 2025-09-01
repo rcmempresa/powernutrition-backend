@@ -24,8 +24,8 @@ const pagamentoMbway = require('./routes/pagamentoMbway');
 const pagamentoCC = require('./routes/pagamentoCC');
 const notificacoes = require('./routes/notificacoes')
 const imagensSecundarias = require('./routes/imagensSecundarias');
-const reviewsRouter = require('./routes/reviews.js');
-const favoriteRoutes = require('./routes/favoriteRoutes.js');
+const reviewsRouter = require('./routes/reviews');
+const favoriteRoutes = require('./routes/favoriteRoutes');
 const contactRoutes = require('./routes/ContactRoutes');
 
 require('dotenv').config();
