@@ -31,7 +31,12 @@ const contactRoutes = require('./routes/contactRoutes');
 require('dotenv').config();
 
 app.use(express.json());
-app.use(cors());
+const corsOptions = {
+  origin: 'https://www.rdpowernutrition.pt', 
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 
 // ✨ Lógica de configuração do Multer e da rota de upload de imagens ✨
 const uploadDir = path.join(__dirname, 'uploads');
