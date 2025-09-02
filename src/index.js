@@ -31,9 +31,11 @@ const contactRoutes = require('./routes/contactRoutes');
 require('dotenv').config();
 
 app.use(express.json());
+
 const corsOptions = {
-  origin: 'https://www.rdpowernutrition.pt', 
-  optionsSuccessStatus: 200
+  origin: 'https://www.rdpowernutrition.pt',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos que a sua API usa
+  optionsSuccessStatus: 200 // Algumas versões de navegadores mais antigos precisam disso
 };
 
 app.use(cors(corsOptions));

@@ -5,8 +5,8 @@ require('dotenv').config();
 // Usa um serviço genérico, como o Gmail, para comunicações internas.
 const transporterGmail = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // Use false para porta 587
+  port: 465,       // Alterado para 465
+  secure: true,    // Use true para a porta 465
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_PASS,
@@ -18,6 +18,7 @@ const transporterGmail = nodemailer.createTransport({
 const transporterConfirmacao = nodemailer.createTransport({
   host: 'webdomain03.dnscpanel.com',
   port: 465,
+  secure: true,    // Use true para a porta 465
   auth: {
     user: process.env.CONFIRMATION_EMAIL_USER,
     pass: process.env.CONFIRMATION_EMAIL_PASS,
