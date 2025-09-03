@@ -1,45 +1,63 @@
-const SibApiV3Sdk = require('@getbrevo/brevo');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// Inicializa a API do Brevo
-const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+// --- Transporter para E-mails do Proprietário (Ex: Notificações de Nova Encomenda) ---
+// Usa um serviço genérico, como o Gmail, para comunicações internas.
+const transporterGmail = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // Use false para porta 587
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_PASS,
+  },
+});
 
-// Define a chave de API diretamente na instância da API
-apiInstance.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
+// --- Transporter para E-mails de Confirmação (Ex: Clientes) ---
+// Ideal para comunicações de alto volume, como registos e encomendas.
+const transporterConfirmacao = nodemailer.createTransport({
+  host: 'webdomain03.dnscpanel.com',
+  port: 465,
+  auth: {
+    user: process.env.CONFIRMATION_EMAIL_USER,
+    pass: process.env.CONFIRMATION_EMAIL_PASS,
+  },
+});
 
 // --- Função Centralizada para Enviar E-mails ---
 /**
- * Envia um e-mail transacional usando a API do Brevo.
- * @param {string} to - O endereço de e-mail do destinatário.
- * @param {string} subject - O assunto do e-mail.
- * @param {string} htmlContent - O conteúdo do e-mail em formato HTML.
+ * Envia um e-mail usando o transportador apropriado.
+ * @param {string} to - Endereço de e-mail do destinatário.
+ * @param {string} subject - Assunto do e-mail.
+ * @param {string} htmlContent - Conteúdo do e-mail em formato HTML.
+ * @param {'confirmacao'|'proprietario'} [type='confirmacao'] - Tipo de e-mail a enviar.
  */
-const sendEmail = async (to, subject, htmlContent) => {
+const sendEmail = async (to, subject, htmlContent, type = 'confirmacao') => {
   try {
-    const sender = {
-      email: process.env.CONFIRMATION_EMAIL_USER,
-      name: 'RD Power',
-    };
+    let transporter;
+    let fromEmail;
 
-    const receivers = [{
-      email: to,
-    }];
-    
-    // Cria o payload do e-mail
-    const sendSmtpEmail = {
-      sender,
-      to: receivers,
-      subject,
-      htmlContent,
+    // Seleciona o transportador e o e-mail de origem com base no tipo
+    if (type === 'proprietario') {
+      transporter = transporterGmail;
+      fromEmail = process.env.GMAIL_USER;
+    } else { // 'confirmacao' por padrão
+      transporter = transporterConfirmacao;
+      fromEmail = process.env.CONFIRMATION_EMAIL_USER;
+    }
+
+    const mailOptions = {
+      from: `"RD Power" <${fromEmail}>`,
+      to: to,
+      subject: subject,
+      html: htmlContent,
     };
     
-    // Envia o e-mail
-    await apiInstance.sendTransacEmail(sendSmtpEmail);
-    
-    console.log(`E-mail enviado com sucesso para ${to}!`);
+    await transporter.sendMail(mailOptions);
+    console.log(`E-mail de tipo '${type}' enviado com sucesso para ${to}!`);
   } catch (error) {
-    console.error(`Erro ao enviar e-mail:`, error.body);
-    throw error;
+    console.error(`Erro ao enviar e-mail de tipo '${type}':`, error);
+    throw error; // Propaga o erro para ser tratado pela rota que chamou a função
   }
 };
 
