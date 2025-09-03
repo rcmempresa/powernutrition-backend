@@ -89,11 +89,13 @@ const getDashboardData = async () => {
     // NOVO: Produtos Mais Vendidos
     const topProductsResult = await db.query(
       `SELECT p.id, p.name, p.image_url, SUM(oi.quantity) as total_sold
-       FROM products p
-       JOIN order_items oi ON p.id = oi.product_id
-       GROUP BY p.id, p.name, p.image_url
-       ORDER BY total_sold DESC
-       LIMIT 5`
+      FROM products p
+      JOIN order_items oi ON p.id = oi.product_id
+      JOIN orders o ON oi.order_id = o.id
+      WHERE o.status = 'pago' -- ou 'delivered'
+      GROUP BY p.id, p.name, p.image_url
+      ORDER BY total_sold DESC
+      LIMIT 5`
     );
     const topSellingProducts = topProductsResult.rows.map(product => ({
       ...product,
