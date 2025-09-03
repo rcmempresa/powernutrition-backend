@@ -1,11 +1,16 @@
-const Sib = require('@getbrevo/brevo');
+const Brevo = require('@getbrevo/brevo');
 require('dotenv').config();
 
-const brevoClient = new Sib.ApiClient();
-brevoClient.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
+// Inicializa a API do Brevo usando o método 'ApiClient.instance'
+const defaultClient = Brevo.ApiClient.instance;
 
-const transactionalEmailsApi = new Sib.TransactionalEmailsApi();
+// Define a autenticação usando a sua chave de API
+defaultClient.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
 
+// Inicializa a API de E-mails Transacionais
+const apiInstance = new Brevo.TransactionalEmailsApi();
+
+// --- Função Centralizada para Enviar E-mails ---
 const sendEmail = async (to, subject, htmlContent) => {
   try {
     const sender = {
@@ -17,7 +22,7 @@ const sendEmail = async (to, subject, htmlContent) => {
       email: to,
     }];
     
-    await transactionalEmailsApi.sendTransacEmail({
+    await apiInstance.sendTransacEmail({
       sender,
       to: receivers,
       subject,
