@@ -34,7 +34,7 @@ app.use(express.json());
 
 const corsOptions = {
   origin: 'https://www.rdpowernutrition.pt',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos que a sua API usa
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], // Métodos que a sua API usa
   optionsSuccessStatus: 200 // Algumas versões de navegadores mais antigos precisam disso
 };
 
