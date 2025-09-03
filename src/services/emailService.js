@@ -1,21 +1,18 @@
 const SibApiV3Sdk = require('@getbrevo/brevo');
 require('dotenv').config();
 
-// 1. Get the default API client instance
-const defaultClient = SibApiV3Sdk.ApiClient.instance;
-
-// 2. Set the API key on the default client instance
-defaultClient.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
-
-// 3. Initialize the TransactionalEmailsApi
+// Inicializa a API do Brevo
 const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
 
-// --- Centralized Email Sending Function ---
+// Define a chave de API diretamente na instância da API
+apiInstance.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
+
+// --- Função Centralizada para Enviar E-mails ---
 /**
- * Sends a transactional email using the Brevo API.
- * @param {string} to - The recipient's email address.
- * @param {string} subject - The email subject.
- * @param {string} htmlContent - The email content in HTML format.
+ * Envia um e-mail transacional usando a API do Brevo.
+ * @param {string} to - O endereço de e-mail do destinatário.
+ * @param {string} subject - O assunto do e-mail.
+ * @param {string} htmlContent - O conteúdo do e-mail em formato HTML.
  */
 const sendEmail = async (to, subject, htmlContent) => {
   try {
@@ -28,7 +25,7 @@ const sendEmail = async (to, subject, htmlContent) => {
       email: to,
     }];
     
-    // Create the email payload
+    // Cria o payload do e-mail
     const sendSmtpEmail = {
       sender,
       to: receivers,
@@ -36,12 +33,12 @@ const sendEmail = async (to, subject, htmlContent) => {
       htmlContent,
     };
     
-    // Send the email
+    // Envia o e-mail
     await apiInstance.sendTransacEmail(sendSmtpEmail);
     
-    console.log(`Email successfully sent to ${to}!`);
+    console.log(`E-mail enviado com sucesso para ${to}!`);
   } catch (error) {
-    console.error(`Error sending email:`, error.body);
+    console.error(`Erro ao enviar e-mail:`, error.body);
     throw error;
   }
 };
