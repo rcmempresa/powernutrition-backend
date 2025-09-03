@@ -1,11 +1,14 @@
 const SibApiV3Sdk = require('@getbrevo/brevo');
 require('dotenv').config();
 
-// Initialize the API client
-const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+// 1. Get the default API client instance
+const defaultClient = SibApiV3Sdk.ApiClient.instance;
 
-// Set the API key
-apiInstance.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
+// 2. Set the API key on the default client instance
+defaultClient.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
+
+// 3. Initialize the TransactionalEmailsApi
+const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
 
 // --- Centralized Email Sending Function ---
 /**
