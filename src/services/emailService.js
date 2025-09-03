@@ -5,10 +5,15 @@ require('dotenv').config();
 const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
 
 // Set the API key
-const apiKey = apiInstance.authentications['api-key'];
-apiKey.apiKey = process.env.BREVO_API_KEY;
+apiInstance.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
 
 // --- Centralized Email Sending Function ---
+/**
+ * Sends a transactional email using the Brevo API.
+ * @param {string} to - The recipient's email address.
+ * @param {string} subject - The email subject.
+ * @param {string} htmlContent - The email content in HTML format.
+ */
 const sendEmail = async (to, subject, htmlContent) => {
   try {
     const sender = {
@@ -20,12 +25,16 @@ const sendEmail = async (to, subject, htmlContent) => {
       email: to,
     }];
     
-    await apiInstance.sendTransacEmail({
+    // Create the email payload
+    const sendSmtpEmail = {
       sender,
       to: receivers,
       subject,
       htmlContent,
-    });
+    };
+    
+    // Send the email
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
     
     console.log(`Email successfully sent to ${to}!`);
   } catch (error) {
