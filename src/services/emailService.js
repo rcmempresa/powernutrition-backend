@@ -1,32 +1,32 @@
-const nodemailer = require('nodemailer');
+const Sib = require('@getbrevo/brevo');
 require('dotenv').config();
 
-// --- Transporter para E-mails de Confirmação (Brevo) ---
-const transporterBrevo = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false, // TLS is used, not SSL. A porta 587 usa STARTTLS
-  auth: {
-    user: process.env.BREVO_USER,
-    pass: process.env.BREVO_PASS,
-  },
-});
+const brevoClient = new Sib.ApiClient();
+brevoClient.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
 
-// --- Função Centralizada para Enviar E-mails ---
+const transactionalEmailsApi = new Sib.TransactionalEmailsApi();
+
 const sendEmail = async (to, subject, htmlContent) => {
   try {
-    const mailOptions = {
-      from: `"RD Power" <geral@1way.pt>`, // Use um e-mail verificado no Brevo
-      to: to,
-      subject: subject,
-      html: htmlContent,
+    const sender = {
+      email: process.env.CONFIRMATION_EMAIL_USER,
+      name: 'RD Power',
     };
+
+    const receivers = [{
+      email: to,
+    }];
     
-    // Agora, o Nodemailer usa o transporter do Brevo para enviar o e-mail
-    await transporterBrevo.sendMail(mailOptions);
-    console.log(`E-mail de confirmação enviado com sucesso para ${to}!`);
+    await transactionalEmailsApi.sendTransacEmail({
+      sender,
+      to: receivers,
+      subject,
+      htmlContent,
+    });
+    
+    console.log(`E-mail enviado com sucesso para ${to}!`);
   } catch (error) {
-    console.error(`Erro ao enviar e-mail:`, error);
+    console.error(`Erro ao enviar e-mail:`, error.body);
     throw error;
   }
 };
