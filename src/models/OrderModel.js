@@ -160,7 +160,6 @@ const findOrdersWithItemsByUserId = async (userId) => {
 
   try {
     const result = await db.query(query, [userId]);
-    // A query já retorna um array de objetos formatado
     return result.rows; 
   } catch (error) {
     console.error('Erro ao buscar encomendas com detalhes:', error);
