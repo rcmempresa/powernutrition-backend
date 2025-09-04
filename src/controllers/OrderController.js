@@ -268,15 +268,10 @@ const listUserOrders = async (req, res) => {
 const getUserOrdersWithDetails = async (req, res) => {
   try {
     const userId = req.user.id; 
-    
-    if (!userId) {
-      return res.status(401).json({ message: 'Autenticação necessária.' });
-    }
 
     // Chama a nova função do model que faz a junção das tabelas
     const orders = await orderModel.findOrdersWithItemsByUserId(userId);
     
-    // A resposta já é um array com as encomendas e os itens
     return res.status(200).json(orders);
 
   } catch (err) {
