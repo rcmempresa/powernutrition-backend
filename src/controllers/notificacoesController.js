@@ -197,7 +197,7 @@ const handleEasyPayCallback = async (req, res) => {
         </div>
       `;
       try {
-          await sendEmail(user.email, clientEmailSubject, clientEmailHtml);
+          await (user.email, clientEmailSubject, clientEmailHtml);
           console.log(`E-mail de confirmação de pagamento para o cliente ${user.email} enviado.`);
       } catch (emailError) {
           console.error('Erro ao enviar e-mail para o cliente:', emailError);

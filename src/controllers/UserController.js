@@ -67,7 +67,7 @@ const register = async (req, res) => {
             <p>Agradecemos por te juntares à nossa comunidade. Estamos entusiasmados por ter-te a bordo!</p>
             <p>Para começares a explorar os nossos suplementos e produtos de fitness, clica no botão abaixo para iniciar sessão.</p>
             
-            <a href="http://localhost:5173/login" 
+            <a href="https://www.rdpowernutrition.pt/login" 
                style="display: inline-block; background-color: #f97316; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-top: 20px;">
                Iniciar Sessão Agora
             </a>
@@ -75,7 +75,7 @@ const register = async (req, res) => {
     
           <div style="background-color: #2c3440; padding: 20px; text-align: center; font-size: 14px;">
             <p style="margin: 0;">Se tiveres alguma questão, não hesites em contactar-nos.</p>
-            <p style="margin: 5px 0;">Visita o nosso site: <a href="http://localhost:5173" style="color: #f97316; text-decoration: none;">www.rdpower.com</a></p>
+            <p style="margin: 5px 0;">Visita o nosso site: <a href="https://www.rdpowernutrition.pt" style="color: #f97316; text-decoration: none;">www.rdpowernutrition.pt</a></p>
             <p style="margin-top: 10px; color: #9ca3af;">&copy; ${new Date().getFullYear()} RD Power. Todos os direitos reservados.</p>
           </div>
     

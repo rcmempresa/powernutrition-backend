@@ -2,8 +2,8 @@ const orderModel = require('../models/OrderModel');
 const cartModel = require('../models/CartModel');
 const couponModel = require('../models/CouponModel');
 const productModel = require('../models/ProductModel');
-const userModel = require('../models/UserModel'); 
-const { sendEmail } = require('../services/emailService'); 
+const userModel = require('../models/UserModel');
+const { sendEmail } = require('../services/emailService');
 const db = require('../config/db');
 
 const checkout = async (req, res) => {
@@ -26,12 +26,12 @@ const checkout = async (req, res) => {
       const product = await productModel.findProductById(item.product_id);
       if (!product) return res.status(404).json({ message: `Produto com ID ${item.product_id} não encontrado` });
       if (product.stock_quantity < item.quantity) {
-        return res.status(400).json({ 
-          message: `Stock insuficiente para o produto "${product.name}". Disponível: ${product.stock_quantity}` 
+        return res.status(400).json({
+          message: `Stock insuficiente para o produto "${product.name}". Disponível: ${product.stock_quantity}`
         });
       }
     }
-    
+
     let totalPrice = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     let discount = 0;
     if (couponCode) {
@@ -44,35 +44,53 @@ const checkout = async (req, res) => {
         return res.status(400).json({ message: 'Cupão inválido ou inativo' });
       }
     }
-
-
-    const easypayId = paymentDetails.payment_id;
+    
+    // Obter o easypayId apenas se paymentDetails existir
+    const easypayId = paymentDetails ? paymentDetails.payment_id : null;
 
     // Criar encomenda com os dados de pagamento
     const order = await orderModel.createOrder(
-      userId, 
-      addressId, 
-      totalPrice, 
-      'pendente', 
+      userId,
+      addressId,
+      totalPrice,
+      'pendente',
       couponCode || null,
       paymentMethod,
       easypayId
     );
 
-    const productsForEmail = []; 
+    const productsForEmail = [];
     for (const item of cartItems) {
       await orderModel.addOrderItem(order.id, item.product_id, item.quantity, item.price);
-      
+
       const productDetails = await productModel.findProductById(item.product_id);
       productsForEmail.push({
-          name: productDetails.name,
-          quantity: item.quantity,
-          price: productDetails.price // Use o preço do produto para garantir que é um número
+        name: productDetails.name,
+        quantity: item.quantity,
+        price: productDetails.price
       });
-
     }
 
     await orderModel.clearCart(cart.id);
+
+    // Preparar o HTML para os detalhes de pagamento no e-mail do cliente
+    let paymentDetailsHtml = '';
+    if (paymentMethod === 'multibanco') {
+      const { entity, reference } = paymentDetails;
+      if (entity && reference) {
+        paymentDetailsHtml = `
+            <p style="margin: 5px 0;"><strong>Entidade:</strong> <span style="color: #f97316;">${entity}</span></p>
+            <p style="margin: 5px 0;"><strong>Referência:</strong> <span style="color: #f97316;">${reference}</span></p>
+            <p style="margin-top: 10px;">Por favor, efetue o pagamento num terminal Multibanco ou através do seu serviço de homebanking, utilizando os dados acima.</p>
+        `;
+      }
+    } else if (paymentMethod === 'mbway') {
+      paymentDetailsHtml = `<p>Por favor, verifique a aplicação MBWay no seu telemóvel para confirmar o pagamento.</p>`;
+    } else if (paymentMethod === 'cc') {
+      paymentDetailsHtml = `<p>O seu pagamento com Cartão de Crédito foi processado com sucesso.</p>`;
+    } else if (paymentMethod === 'cod') {
+        paymentDetailsHtml = `<p>A sua encomenda será paga à cobrança no momento da entrega.</p>`;
+    }
 
     // Preparar e enviar o e-mail de confirmação para o cliente
     const produtosHtml = productsForEmail.map(p => `
@@ -92,7 +110,7 @@ const checkout = async (req, res) => {
         <div style="max-width: 600px; margin: 0 auto; background-color: #374151; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
           
           <div style="background-color: #f97316; padding: 20px; text-align: center;">
-            <img src="http://localhost:5173/rd_power.png" alt="RD Power Logo" style="width: 150px; height: auto;">
+            <img src="https://wwww.rdpowernutrition.pt/rd_power.png" alt="RD Power Logo" style="width: 150px; height: auto;">
             <h1 style="color: #ffffff; font-size: 24px; margin-top: 15px; margin-bottom: 0;">Encomenda Confirmada!</h1>
           </div>
           <div style="padding: 20px;">
@@ -102,6 +120,7 @@ const checkout = async (req, res) => {
               <h3 style="color: #f97316; margin-top: 0;">Detalhes da Encomenda</h3>
               <p><strong>Data da Encomenda:</strong> ${new Date().toLocaleDateString()}</p>
               <p><strong>Método de Pagamento:</strong> ${paymentMethod}</p>
+              ${paymentDetailsHtml}
             </div>
             <h3 style="color: #f97316; margin-top: 20px;">Artigos da Encomenda</h3>
             <table width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse;">
@@ -122,25 +141,44 @@ const checkout = async (req, res) => {
             </div>
           </div>
           <div style="background-color: #2c3440; padding: 20px; text-align: center; font-size: 14px;">
-            <p style="margin: 0;">Se tiveres alguma questão, contacta-nos em <a href="mailto:suporte@rdpower.com" style="color: #f97316; text-decoration: none;">suporte@rdpower.com</a>.</p>
+            <p style="margin: 0;">Se tiveres alguma questão, contacta-nos em <a href="mailto:geral@rdpowernutrition.pt" style="color: #f97316; text-decoration: none;">geral@rdpowernutrition.pt</a>.</p>
             <p style="margin-top: 10px; color: #9ca3af;">&copy; ${new Date().getFullYear()} RD Power. Todos os direitos reservados.</p>
           </div>
         </div>
       </div>
     `;
-    
+
     try {
       await sendEmail(email, `Confirmação de Encomenda #${order.id}`, emailHtml);
       console.log('E-mail de confirmação de encomenda para o cliente enviado com sucesso.');
     } catch (emailError) {
       console.error('Erro ao enviar e-mail de confirmação de encomenda para o cliente:', emailError);
     }
-    
+
+    // Preparar o HTML para os detalhes de pagamento no e-mail do dono da loja
+    let ownerPaymentDetailsHtml = '';
+    if (paymentMethod === 'multibanco') {
+      const { entity, reference } = paymentDetails;
+      if (entity && reference) {
+        ownerPaymentDetailsHtml = `
+            <p style="margin: 5px 0;"><strong>Entidade:</strong> ${entity}</p>
+            <p style="margin: 5px 0;"><strong>Referência:</strong> ${reference}</p>
+        `;
+      }
+    } else if (paymentMethod === 'mbway') {
+        ownerPaymentDetailsHtml = `<p>O cliente efetuou o pagamento via MBWay. Verifique a confirmação na sua conta Easypay.</p>`;
+    } else if (paymentMethod === 'cc') {
+        ownerPaymentDetailsHtml = `<p>O cliente efetuou o pagamento com Cartão de Crédito. Verifique a confirmação na sua conta Easypay.</p>`;
+    } else if (paymentMethod === 'cod') {
+        ownerPaymentDetailsHtml = `<p>O cliente optou por pagamento à cobrança.</p>`;
+    }
+
+
     // Envio de e-mail de notificação para o dono da loja
     const shopOwnerEmail = process.env.SHOP_OWNER_EMAIL;
     if (shopOwnerEmail) {
-        const ownerEmailSubject = `Nova Encomenda #${order.id} Recebida!`;
-        const ownerEmailHtml = `
+      const ownerEmailSubject = `Nova Encomenda #${order.id} Recebida!`;
+      const ownerEmailHtml = `
             <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1f2937; background-color: #f3f4f6; padding: 20px;">
                 <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
                     
@@ -158,6 +196,7 @@ const checkout = async (req, res) => {
                             <p style="margin: 5px 0;"><strong>Cliente:</strong> ${user.username}</p>
                             <p style="margin: 5px 0;"><strong>E-mail do Cliente:</strong> ${email}</p>
                             <p style="margin: 5px 0;"><strong>Método de Pagamento:</strong> ${paymentMethod}</p>
+                            ${ownerPaymentDetailsHtml}
                             <h4 style="border-top: 1px solid #e5e7eb; padding-top: 10px; margin-top: 15px;">Valor Total: <span style="float: right; color: #f97316; font-size: 18px;">€${totalPrice.toFixed(2)}</span></h4>
                         </div>
                         
@@ -193,18 +232,18 @@ const checkout = async (req, res) => {
             </div>
         `;
 
-        try {
-            await sendEmail(shopOwnerEmail, ownerEmailSubject, ownerEmailHtml);
-            console.log('E-mail de notificação para o dono da loja enviado com sucesso.');
-        } catch (emailError) {
-            console.error('Erro ao enviar e-mail de notificação para o dono da loja:', emailError);
-        }
+      try {
+        await sendEmail(shopOwnerEmail, ownerEmailSubject, ownerEmailHtml);
+        console.log('E-mail de notificação para o dono da loja enviado com sucesso.');
+      } catch (emailError) {
+        console.error('Erro ao enviar e-mail de notificação para o dono da loja:', emailError);
+      }
     } else {
-        console.warn('Variável de ambiente SHOP_OWNER_EMAIL não está definida. E-mail de notificação para o dono da loja não enviado.');
+      console.warn('Variável de ambiente SHOP_OWNER_EMAIL não está definida. E-mail de notificação para o dono da loja não enviado.');
     }
 
-    res.status(201).json({ 
-      message: 'Encomenda realizada com sucesso', 
+    res.status(201).json({
+      message: 'Encomenda realizada com sucesso',
       orderId: order.id,
       discountApplied: discount
     });

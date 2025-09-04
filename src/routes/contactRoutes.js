@@ -65,7 +65,7 @@ router.post('/', async (req, res) => {
                         <p style="margin-top: 30px;">Com os melhores cumprimentos,<br>A Equipa RD Power</p>
                     </div>
                     <div style="background-color: #f97316; padding: 15px; text-align: center; font-size: 12px; color: white; border-radius: 0 0 8px 8px;">
-                        RD Power Nutrition &bull; <a href="http://localhost:5173" style="color: #ffffff; text-decoration: none;">www.rdpowernutrition.pt</a>
+                        RD Power Nutrition &bull; <a href="https://www.rdpowernutrition.pt" style="color: #ffffff; text-decoration: none;">www.rdpowernutrition.pt</a>
                     </div>
                 </div>
             </div>
