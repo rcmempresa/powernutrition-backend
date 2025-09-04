@@ -1,3 +1,4 @@
+// userMiddleware.js
 const jwt = require('jsonwebtoken');
 
 const userMiddleware = (req, res, next) => {
@@ -10,10 +11,13 @@ const userMiddleware = (req, res, next) => {
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Tente com a chave hardcoded
+    const decoded = jwt.verify(token, 'powernutrition'); 
+    
     req.user = decoded;
     next();
   } catch (err) {
+    console.error(err); // Para ver o erro
     return res.status(401).json({ message: 'Token inválido ou expirado' });
   }
 };
