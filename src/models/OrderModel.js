@@ -134,6 +134,40 @@ const getOrdersByUser = async (userId) => {
   return result;  // o objeto completo do pg com várias props
 }
 
+const findOrdersWithItemsByUserId = async (userId) => {
+  const query = `
+    SELECT
+      o.id,
+      o.total_price,
+      o.created_at,
+      o.status,
+      o.payment_method,
+      json_agg(
+        json_build_object(
+          'id', oi.id,
+          'product_name', p.name,
+          'quantity', oi.quantity,
+          'price', oi.price
+        )
+      ) AS order_items
+    FROM orders o
+    JOIN order_items oi ON o.id = oi.order_id
+    JOIN products p ON oi.product_id = p.id
+    WHERE o.user_id = $1
+    GROUP BY o.id
+    ORDER BY o.created_at DESC
+  `;
+
+  try {
+    const result = await db.query(query, [userId]);
+    // A query já retorna um array de objetos formatado
+    return result.rows; 
+  } catch (error) {
+    console.error('Erro ao buscar encomendas com detalhes:', error);
+    throw error;
+  }
+};
+
 const updatePaymentStatus = async (orderId, newStatus) => {
     try {
         const result = await db.query(

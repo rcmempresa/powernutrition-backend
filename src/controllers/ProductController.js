@@ -41,6 +41,44 @@ const createProduct = async (req, res) => {
   }
 };
 
+const createProductAndVariant = async (req, res) => {
+  try {
+    const { name } = req.body.product;
+    const { sku } = req.body.variant;
+
+    // Verificar se o nome do produto já existe
+    const existingName = await productModel.findProductByName(name);
+    if (existingName) {
+      return res.status(400).json({ message: 'Já existe um produto com esse nome.' });
+    }
+
+    // A validação do SKU agora acontece no model, antes de criar a variante
+    
+    // Passa os dados do produto e da variante para a função do model
+    const newProduct = await productModel.createProductAndVariant(req.body);
+
+    res.status(201).json(newProduct);
+  } catch (error) {
+    console.error('Erro ao criar produto e variante:', error);
+    res.status(500).json({ message: 'Erro interno ao criar produto.' });
+  }
+};
+
+
+const addVariantToProduct = async (req, res) => {
+  try {
+    const { productId } = req.params; // Recebe o ID do produto da URL
+    const { variant } = req.body;
+    
+    // A validação do SKU é feita no model
+    const newVariant = await productModel.addVariantToProduct(productId, variant);
+
+    res.status(201).json(newVariant);
+  } catch (error) {
+    console.error('Erro ao adicionar variante:', error);
+    res.status(500).json({ message: 'Erro interno ao adicionar variante' });
+  }
+};
 
 
 const updateProduct = async (req, res) => {
@@ -70,5 +108,7 @@ module.exports = {
   getProductById,
   createProduct,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  createProductAndVariant,
+  addVariantToProduct
 };
