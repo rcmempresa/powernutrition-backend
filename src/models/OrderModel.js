@@ -131,7 +131,7 @@ const clearCart = async (cartId) => {
 
 const getOrdersByUser = async (userId) => {
   const result = await db.query('SELECT * FROM orders WHERE user_id = $1', [userId]);
-  return result;  // o objeto completo do pg com várias props
+  return result; 
 }
 
 const findOrdersWithItemsByUserId = async (userId) => {
@@ -231,5 +231,6 @@ module.exports = {
   updatePaymentStatus,
   getOrderByEasyPayReference,
   getOrderByEasyPayId,
-  getOrderItems
+  getOrderItems,
+  findOrdersWithItemsByUserId
 };

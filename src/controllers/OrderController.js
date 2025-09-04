@@ -267,7 +267,7 @@ const listUserOrders = async (req, res) => {
 
 const getUserOrdersWithDetails = async (req, res) => {
   try {
-    const userId = req.user.id; // Assume que o ID do utilizador é obtido do token JWT
+    const userId = req.user.id; 
     
     if (!userId) {
       return res.status(401).json({ message: 'Autenticação necessária.' });
