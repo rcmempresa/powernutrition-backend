@@ -84,18 +84,18 @@ const getFavoriteProductsByUserId = async (userId) => {
           p.name AS product_name,
           p.description,
           p.image_url,
-          p.original_price,
           b.name AS brand_name,
           c.name AS category_name,
-          v.id AS variant_id,
+          uf.variant_id, -- Seleciona diretamente o ID da variante da tabela de favoritos
           v.preco,
+          v.original_price,
           v.weight_value,
           v.weight_unit,
           fl.name AS flavor_name,
           uf.created_at AS favorited_at
        FROM user_favorites uf
-       JOIN products p ON uf.product_id = p.id
-       JOIN variantes v ON p.id = v.produto_id -- ✨ JOIN para a tabela de variantes
+       JOIN product_variants v ON uf.variant_id = v.id
+       JOIN products p ON v.product_id = p.id
        LEFT JOIN brands b ON p.brand_id = b.id
        LEFT JOIN categories c ON p.category_id = c.id
        LEFT JOIN flavors fl ON v.sabor_id = fl.id
@@ -104,33 +104,12 @@ const getFavoriteProductsByUserId = async (userId) => {
       [userId]
     );
 
-    // ✨ Agrupar as variantes por produto
-    const productsMap = new Map();
-    result.rows.forEach(row => {
-      if (!productsMap.has(row.product_id)) {
-        productsMap.set(row.product_id, {
-          id: row.product_id,
-          name: row.product_name,
-          description: row.description,
-          image_url: row.image_url,
-          original_price: row.original_price,
-          brand_name: row.brand_name,
-          category_name: row.category_name,
-          variants: []
-        });
-      }
-      productsMap.get(row.product_id).variants.push({
-        id: row.variant_id,
-        preco: row.preco,
-        weight_value: row.weight_value,
-        weight_unit: row.weight_unit,
-        flavor_name: row.flavor_name,
-      });
-    });
+    // ✨ Removemos a lógica de agrupar em productsMap.
+    // O resultado da query já é a lista que o frontend precisa.
 
-    return Array.from(productsMap.values());
+    return result.rows;
   } catch (error) {
-    console.error('Erro no modelo ao obter produtos favoritos do utilizador:', error);
+    console.error('Erro no modelo ao obter favoritos do utilizador:', error);
     throw error;
   }
 };
