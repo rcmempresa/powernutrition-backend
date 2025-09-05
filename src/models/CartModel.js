@@ -1,3 +1,4 @@
+// models/CartModel.js
 const db = require('../config/db');
 
 // Cria ou obtém o carrinho do utilizador
@@ -12,62 +13,75 @@ const getOrCreateCart = async (userId) => {
   return created.rows[0];
 };
 
-// Adiciona ou atualiza um item no carrinho
-const addItemToCart = async (cartId, productId, quantity, price) => {
+// ✨ Adiciona ou atualiza um item no carrinho com base no variant_id
+const addItemToCart = async (cartId, variantId, quantity, price) => {
   const existing = await db.query(
-    'SELECT * FROM cart_items WHERE cart_id = $1 AND product_id = $2',
-    [cartId, productId]
+    'SELECT * FROM cart_items WHERE cart_id = $1 AND variant_id = $2', // Usar variant_id
+    [cartId, variantId]
   );
 
   if (existing.rows.length > 0) {
     const updated = await db.query(
       `UPDATE cart_items
        SET quantity = quantity + $1, updated_at = CURRENT_TIMESTAMP
-       WHERE cart_id = $2 AND product_id = $3
-       RETURNING *`,
-      [quantity, cartId, productId]
+       WHERE cart_id = $2 AND variant_id = $3
+       RETURNING *`, // Usar variant_id
+      [quantity, cartId, variantId]
     );
     return updated.rows[0];
   }
 
   const inserted = await db.query(
-    `INSERT INTO cart_items (cart_id, product_id, quantity, price)
+    `INSERT INTO cart_items (cart_id, variant_id, quantity, price)
      VALUES ($1, $2, $3, $4)
-     RETURNING *`,
-    [cartId, productId, quantity, price]
+     RETURNING *`, // Usar variant_id
+    [cartId, variantId, quantity, price]
   );
   return inserted.rows[0];
 };
 
+// ✨ Pega nos itens do carrinho, juntando-os com as tabelas de variantes e produtos
 const getCartItems = async (cartId) => {
   const result = await db.query(
-    `SELECT ci.*, p.name, p.image_url
+    `SELECT
+        ci.*,
+        v.image_url as variant_image,
+        v.flavor_id,
+        v.weight_value,
+        v.weight_unit,
+        v.sku,
+        p.name AS product_name,
+        p.description AS product_description,
+        p.image_url AS product_image,
+        p.brand_name
      FROM cart_items ci
-     JOIN products p ON ci.product_id = p.id
+     JOIN variants v ON ci.variant_id = v.id
+     JOIN products p ON v.product_id = p.id
      WHERE ci.cart_id = $1`,
     [cartId]
   );
   return result.rows;
 };
 
-const updateItemQuantity = async (cartId, productId, quantity) => {
-    console.log('➡️ A atualizar item do carrinho:', { cartId, productId, quantity });
+// ✨ Atualiza a quantidade do item com base no variant_id
+const updateItemQuantity = async (cartId, variantId, quantity) => {
+    console.log('➡️ A atualizar item do carrinho:', { cartId, variantId, quantity });
   const result = await db.query(
     `UPDATE cart_items 
      SET quantity = $1, updated_at = CURRENT_TIMESTAMP 
-     WHERE cart_id = $2 AND product_id = $3 
-     RETURNING *`,
-    [quantity, cartId, productId]
+     WHERE cart_id = $2 AND variant_id = $3 
+     RETURNING *`, // Usar variant_id
+    [quantity, cartId, variantId]
   );
 
   return result.rows[0];
 };
 
-
-const removeItemFromCart = async (cartId, productId) => {
+// ✨ Remove o item do carrinho com base no variant_id
+const removeItemFromCart = async (cartId, variantId) => {
   const result = await db.query(
-    `DELETE FROM cart_items WHERE cart_id = $1 AND product_id = $2 RETURNING *`,
-    [cartId, productId]
+    `DELETE FROM cart_items WHERE cart_id = $1 AND variant_id = $2 RETURNING *`, // Usar variant_id
+    [cartId, variantId]
   );
   return result.rows[0];
 };

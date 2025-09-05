@@ -1,5 +1,6 @@
+// O seu CartController já estava a usar o productModel, mas vamos garantir que ele tem a função correta
 const cartModel = require('../models/CartModel');
-const productModel = require('../models/ProductModel');
+const productModel = require('../models/ProductModel'); 
 
 const getCart = async (req, res) => {
   try {
@@ -13,33 +14,32 @@ const getCart = async (req, res) => {
   }
 };
 
-// CartController.js
-
+// ✨ addToCart corrigido para usar variant_id
 const addToCart = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { product_id, quantity } = req.body;
+    const { variant_id, quantity } = req.body;
 
-    if (!product_id || !quantity || quantity <= 0) {
-      return res.status(400).json({ message: 'product_id e quantity válidos são obrigatórios' });
+    if (!variant_id || !quantity || quantity <= 0) {
+      // Mensagem de erro mais precisa
+      return res.status(400).json({ message: 'variant_id e quantity válidos são obrigatórios' });
     }
 
-    // Buscar o produto para obter o preço atual
-    const product = await productModel.findProductById(product_id);
-    if (!product) {
-      return res.status(404).json({ message: 'Produto não encontrado' });
+    // Buscar a variante para obter o preço
+    // Assumimos que a sua productModel tem uma nova função `findVariantById`
+    const variant = await productModel.findVariantById(variant_id);
+    if (!variant) {
+      return res.status(404).json({ message: 'Variante não encontrada' });
     }
 
-    const price = product.price;
+    const price = variant.preco;
 
-    // Garantir que o carrinho do utilizador existe ou criar um novo
     let cart = await cartModel.findCartByUserId(userId);
     if (!cart) {
       cart = await cartModel.createCart(userId);
     }
 
-    // Adicionar o item ao carrinho (ou atualizar quantidade se já existir)
-    const cartItem = await cartModel.addItemToCart(cart.id, product_id, quantity, price);
+    const cartItem = await cartModel.addItemToCart(cart.id, variant_id, quantity, price);
 
     res.status(201).json({ message: 'Produto adicionado ao carrinho', cartItem });
   } catch (err) {
@@ -48,13 +48,14 @@ const addToCart = async (req, res) => {
   }
 };
 
-
+// ✨ updateQuantity corrigido para usar variantId
 const updateQuantity = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { productId, quantity } = req.body;
+    // O nome da variável agora corresponde à rota
+    const { variantId, quantity } = req.body;
     const cart = await cartModel.getOrCreateCart(userId);
-    const item = await cartModel.updateItemQuantity(cart.id, productId, quantity);
+    const item = await cartModel.updateItemQuantity(cart.id, variantId, quantity);
     res.json(item);
   } catch (err) {
     console.error('Erro ao atualizar quantidade:', err);
@@ -62,12 +63,13 @@ const updateQuantity = async (req, res) => {
   }
 };
 
+// ✨ removeFromCart corrigido para usar variantId
 const removeFromCart = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { productId } = req.params;
+    const { variantId } = req.params;
     const cart = await cartModel.getOrCreateCart(userId);
-    const deleted = await cartModel.removeItemFromCart(cart.id, productId);
+    const deleted = await cartModel.removeItemFromCart(cart.id, variantId);
     res.json(deleted);
   } catch (err) {
     console.error('Erro ao remover item:', err);
