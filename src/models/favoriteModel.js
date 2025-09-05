@@ -20,14 +20,14 @@ const addFavoriteProduct = async (userId, productId) => {
 };
 
 // A função agora usa product_id e insere na tabela user_favorites
-const addFavoriteVariant = async (userId, productId) => {
+const addFavoriteVariant = async (userId, variantId) => {
   const query = `
-    INSERT INTO user_favorites (user_id, product_id)
+    INSERT INTO user_favorites (user_id, variant_id)
     VALUES ($1, $2)
-    ON CONFLICT (user_id, product_id) DO NOTHING
+    ON CONFLICT (user_id, variant_id) DO NOTHING
     RETURNING *;
   `;
-  const values = [userId, productId];
+  const values = [userId, variantId];
 
   try {
     const result = await db.query(query, values);
