@@ -1,6 +1,6 @@
 const db = require('../config/db');
 
-const listProducts = async () => {
+/*const listProducts = async () => {
   const result = await db.query(
     `SELECT
       p.*, -- Seleciona todas as colunas da tabela products (p)
@@ -9,6 +9,19 @@ const listProducts = async () => {
     FROM products p
     LEFT JOIN categories c ON p.category_id = c.id
     LEFT JOIN flavors f ON p.flavor_id = f.id
+    WHERE p.is_active = true
+    ORDER BY p.created_at DESC`
+  );
+  return result.rows;
+};*/
+
+const listProducts = async () => {
+  const result = await db.query(
+    `SELECT
+      p.*,
+      c.name AS category_name
+    FROM products p
+    LEFT JOIN categories c ON p.category_id = c.id
     WHERE p.is_active = true
     ORDER BY p.created_at DESC`
   );
@@ -224,6 +237,54 @@ const decrementStockGinasio = async (productId, quantity) => {
   }
 };
 
+
+const getProductDetails = async (productId) => {
+  const client = await db.connect();
+
+  try {
+    // 1. Obter os detalhes do produto principal
+    const productResult = await client.query(
+      `SELECT
+        p.*,
+        c.name AS category_name,
+        b.name AS brand_name
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN brands b ON p.brand_id = b.id  -- Assumindo que tem uma tabela de marcas
+      WHERE p.id = $1`,
+      [productId]
+    );
+
+    if (productResult.rows.length === 0) {
+      return null; // Produto não encontrado
+    }
+    const product = productResult.rows[0];
+
+    // 2. Obter todas as variantes associadas a este produto
+    const variantsResult = await client.query(
+      `SELECT
+        v.*,
+        f.name AS flavor_name
+      FROM variantes v
+      LEFT JOIN flavors f ON v.sabor_id = f.id
+      WHERE v.produto_id = $1
+      ORDER BY v.peso_g ASC`,
+      [productId]
+    );
+    
+    // Devolve o produto principal com uma lista das suas variantes
+    return {
+      ...product,
+      variants: variantsResult.rows
+    };
+
+  } catch (error) {
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   listProducts,
   findProductById,
@@ -235,5 +296,6 @@ module.exports = {
   decrementStock,
   decrementStockGinasio,
   createProductAndVariant,
-  addVariantToProduct
+  addVariantToProduct,
+  getProductDetails
 };

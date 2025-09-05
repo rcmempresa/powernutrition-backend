@@ -10,7 +10,7 @@ const listProducts = async (req, res) => {
   }
 };
 
-const getProductById = async (req, res) => {
+/*const getProductById = async (req, res) => {
   try {
     const product = await productModel.findProductById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Produto não encontrado' });
@@ -18,6 +18,26 @@ const getProductById = async (req, res) => {
   } catch (err) {
     console.error('Erro ao buscar produto:', err);
     res.status(500).json({ message: 'Erro interno no servidor' });
+  }
+};*/
+
+const getProductById = async (req, res) => {
+  try {
+    const { id } = req.params; 
+   
+    const product = await productModel.getProductDetails(id);
+    
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Produto não encontrado.' });
+    }
+    
+    // Se o produto for encontrado, retorna os dados com status 200
+    res.json(product);
+    
+  } catch (error) {
+    console.error('Erro ao buscar produto:', error);
+    res.status(500).json({ message: 'Erro interno no servidor.' });
   }
 };
 
