@@ -39,10 +39,9 @@ const findProductByName = async (name) => {
 };
 
 const findProductBySku = async (sku) => {
-  const result = await db.query('SELECT * FROM products WHERE sku = $1', [sku]);
+  const result = await db.query('SELECT * FROM variantes WHERE sku = $1', [sku]);
   return result.rows[0];
 };
-
 
 
 const createProduct = async (productData) => {
