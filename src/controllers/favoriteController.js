@@ -3,31 +3,24 @@ const favoriteModel = require('../models/favoriteModel');
 
 // Função para adicionar um produto aos favoritos
 const addFavorite = async (req, res) => {
-  // Assume que o ID do utilizador é proveniente do middleware de autenticação (req.user.id)
   const userId = req.user.id; 
-  // O ID do produto a ser adicionado virá no corpo da requisição
-  const { productId } = req.body; 
+  // Agora recebemos o ID da variante
+  const { variantId } = req.body; 
 
-  // Validação básica: verifica se o productId foi fornecido e é um número válido
-  if (!productId || isNaN(Number(productId))) {
-    return res.status(400).json({ message: 'O ID do produto é obrigatório e deve ser um número válido.' });
+  if (!variantId || isNaN(Number(variantId))) {
+    return res.status(400).json({ message: 'O ID da variante é obrigatório e deve ser um número válido.' });
   }
 
   try {
-    // Chama a função do modelo para adicionar o produto aos favoritos
-    const favorite = await favoriteModel.addFavoriteProduct(userId, productId);
+    const favorite = await favoriteModel.addFavoriteVariant(userId, variantId);
     
-    // Se a função do modelo retornar um registo, significa que foi adicionado (não existia antes)
     if (favorite) {
-      res.status(201).json({ message: 'Produto adicionado aos favoritos com sucesso.', favorite });
+      res.status(201).json({ message: 'Variante adicionada aos favoritos com sucesso.', favorite });
     } else {
-      // Se não houver retorno (devido ao ON CONFLICT DO NOTHING no SQL),
-      // significa que o produto já estava nos favoritos
-      res.status(200).json({ message: 'Produto já se encontra nos favoritos.' });
+      res.status(200).json({ message: 'Variante já se encontra nos favoritos.' });
     }
   } catch (error) {
     console.error('Erro ao adicionar favorito:', error);
-    // Em caso de erro, retorna uma mensagem de erro 500
     res.status(500).json({ message: 'Erro interno do servidor ao adicionar favorito.' });
   }
 };
