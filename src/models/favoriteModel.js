@@ -19,28 +19,25 @@ const addFavoriteProduct = async (userId, productId) => {
   }
 };
 
-const addFavoriteVariant = async (userId, variantId) => {
+// A função agora usa product_id e insere na tabela user_favorites
+const addFavoriteVariant = async (userId, productId) => {
   const query = `
-    INSERT INTO favorites (user_id, variant_id)
+    INSERT INTO user_favorites (user_id, product_id)
     VALUES ($1, $2)
-    ON CONFLICT (user_id, variant_id) DO NOTHING
+    ON CONFLICT (user_id, product_id) DO NOTHING
     RETURNING *;
   `;
-  const values = [userId, variantId];
+  const values = [userId, productId];
 
   try {
     const result = await db.query(query, values);
-    
-    // Se a inserção foi bem-sucedida, result.rows terá um elemento.
-    // Se a linha já existia (ON CONFLICT DO NOTHING), result.rows estará vazio.
     const addedFavorite = result.rows[0];
 
-    // Retorna a linha adicionada, ou null se já existia.
     return addedFavorite || null; 
     
   } catch (error) {
     console.error('Erro no modelo ao adicionar favorito:', error);
-    throw error; // Propaga o erro para o controlador lidar com ele
+    throw error;
   }
 };
 
