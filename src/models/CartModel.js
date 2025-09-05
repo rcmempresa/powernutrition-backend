@@ -45,13 +45,13 @@ const getCartItems = async (cartId) => {
   const result = await db.query(
     `SELECT
         ci.*,
-        v.flavor_id,
+        v.sabor_id,
         v.weight_value,
         v.weight_unit,
         v.sku,
         p.name AS product_name,
         p.description AS product_description,
-        p.image_url AS product_image, -- ✨ A imagem do produto vem da tabela 'p' (products)
+        p.image_url AS product_image,
         p.brand_name
      FROM cart_items ci
      JOIN variantes v ON ci.variant_id = v.id
@@ -61,7 +61,6 @@ const getCartItems = async (cartId) => {
   );
   return result.rows;
 };
-
 // ✨ Atualiza a quantidade do item com base no variant_id
 const updateItemQuantity = async (cartId, variantId, quantity) => {
     console.log('➡️ A atualizar item do carrinho:', { cartId, variantId, quantity });
