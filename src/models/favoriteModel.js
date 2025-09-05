@@ -97,7 +97,7 @@ const getFavoriteProductsByUserId = async (userId) => {
           fl.name AS flavor_name
        FROM user_favorites uf
        JOIN variantes v ON uf.variant_id = v.id
-       JOIN products p ON v.product_id = p.id
+       JOIN products p ON v.produto_id = p.id  -- ✨ Alterado de p.product_id para p.produto_id
        LEFT JOIN brands b ON p.brand_id = b.id
        LEFT JOIN categories c ON p.category_id = c.id
        LEFT JOIN flavors fl ON v.sabor_id = fl.id
