@@ -42,13 +42,13 @@ const addFavoriteVariant = async (userId, variantId) => {
 };
 
 // Função para remover um produto dos favoritos de um utilizador
-const removeFavoriteProduct = async (userId, productId) => {
+const removeFavoriteProduct = async (userId, variantId) => {
   try {
     const result = await db.query(
       `DELETE FROM user_favorites
-       WHERE user_id = $1 AND product_id = $2
+       WHERE user_id = $1 AND variant_id = $2
        RETURNING *`, // Retorna o registo eliminado
-      [userId, productId]
+      [userId, variantId]
     );
     // Retorna o primeiro registo eliminado (se houver)
     return result.rows[0];
@@ -57,7 +57,6 @@ const removeFavoriteProduct = async (userId, productId) => {
     throw error;
   }
 };
-
 // Função para verificar se um produto está nos favoritos de um utilizador
 const isProductFavorite = async (userId, productId) => {
   try {
