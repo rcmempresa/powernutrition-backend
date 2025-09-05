@@ -74,24 +74,22 @@ const createProduct = async (productData) => {
 
 const createProductAndVariant = async (data) => {
   const { product, variant } = data;
-
   const client = await db.connect();
 
   try {
     await client.query('BEGIN');
 
-    // 1. Verificar se o SKU já existe na tabela de variantes
     const existingSku = await client.query('SELECT sku FROM variantes WHERE sku = $1', [variant.sku]);
     if (existingSku.rows.length > 0) {
       await client.query('ROLLBACK');
       throw new Error('Já existe uma variante com esse SKU.');
     }
 
-    // 2. Inserir o produto principal na tabela 'products'
+
     const productResult = await client.query(
       `INSERT INTO products (
-        name, description, brand_id, image_url, category_id
-      ) VALUES ($1, $2, $3, $4, $5)
+        name, description, brand_id, image_url, category_id, original_price
+      ) VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *`,
       [
         product.name,
@@ -99,12 +97,12 @@ const createProductAndVariant = async (data) => {
         product.brand_id,
         product.image_url,
         product.category_id,
+        product.original_price, 
       ]
     );
 
     const newProductId = productResult.rows[0].id;
 
-    // 3. Inserir a primeira variante na tabela 'variantes'
     const variantResult = await client.query(
       `INSERT INTO variantes (
         produto_id, sabor_id, weight_value, weight_unit, preco,
@@ -113,7 +111,7 @@ const createProductAndVariant = async (data) => {
       RETURNING *`,
       [
         newProductId,
-        variant.flavor_id,
+        variant.sabor_id,
         variant.weight_value,
         variant.weight_unit,
         variant.preco,
@@ -124,11 +122,8 @@ const createProductAndVariant = async (data) => {
     );
 
     await client.query('COMMIT');
+    return { product: productResult.rows[0], variant: variantResult.rows[0] };
 
-    return {
-      product: productResult.rows[0],
-      variant: variantResult.rows[0],
-    };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -136,6 +131,7 @@ const createProductAndVariant = async (data) => {
     client.release();
   }
 };
+
 
 const addVariantToProduct = async (productId, variantData) => {
   const { sabor_id, weight_value, weight_unit, preco, quantidade_em_stock, stock_ginasio, sku } = variantData;
