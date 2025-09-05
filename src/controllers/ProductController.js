@@ -61,18 +61,21 @@ const createProduct = async (req, res) => {
 
 const createProductAndVariant = async (req, res) => {
   try {
-    const { name } = req.body.product;
-    const { sku } = req.body.variant;
+    const { product, variant } = req.body;
 
-    // Verificar se o nome do produto já existe
-    const existingName = await productModel.findProductByName(name);
+    // ✨ Validação do nome do produto no controlador
+    const existingName = await productModel.findProductByName(product.name);
     if (existingName) {
       return res.status(400).json({ message: 'Já existe um produto com esse nome.' });
     }
 
-    // A validação do SKU agora acontece no model, antes de criar a variante
-    
-    // Passa os dados do produto e da variante para a função do model
+    // ✨ Validação do SKU da variante no controlador
+    const existingSku = await productModel.findProductBySku(variant.sku);
+    if (existingSku) {
+        return res.status(400).json({ message: 'Já existe uma variante com esse SKU.' });
+    }
+
+    // Chama a função do modelo, agora que os dados estão validados
     const newProduct = await productModel.createProductAndVariant(req.body);
 
     res.status(201).json(newProduct);
