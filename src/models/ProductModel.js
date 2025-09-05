@@ -75,28 +75,28 @@ const createProduct = async (productData) => {
 const createProductAndVariant = async (data) => {
   const { product, variant } = data;
 
-  const client = await db.connect(); // Abre uma conexão com a BD
+  const client = await db.connect();
 
   try {
-    await client.query('BEGIN'); // Inicia a transação
+    await client.query('BEGIN');
 
     // 1. Verificar se o SKU já existe na tabela de variantes
     const existingSku = await client.query('SELECT sku FROM variantes WHERE sku = $1', [variant.sku]);
     if (existingSku.rows.length > 0) {
-      await client.query('ROLLBACK'); // Reverte a transação
+      await client.query('ROLLBACK');
       throw new Error('Já existe uma variante com esse SKU.');
     }
 
-    // 2. Inserir o produto principal na tabela 'produtos'
+    // 2. Inserir o produto principal na tabela 'products'
     const productResult = await client.query(
       `INSERT INTO products (
-        name, description, brand, image_url, category_id
+        name, description, brand_id, image_url, category_id
       ) VALUES ($1, $2, $3, $4, $5)
       RETURNING *`,
       [
         product.name,
         product.description,
-        product.brand,
+        product.brand_id,
         product.image_url,
         product.category_id,
       ]
@@ -123,20 +123,19 @@ const createProductAndVariant = async (data) => {
       ]
     );
 
-    await client.query('COMMIT'); // Confirma a transação
+    await client.query('COMMIT');
 
     return {
       product: productResult.rows[0],
       variant: variantResult.rows[0],
     };
   } catch (error) {
-    await client.query('ROLLBACK'); // Reverte a transação se algo falhar
+    await client.query('ROLLBACK');
     throw error;
   } finally {
-    client.release(); // Liberta a conexão
+    client.release();
   }
 };
-
 
 const addVariantToProduct = async (productId, variantData) => {
   const { sabor_id, weight_value, weight_unit, preco, quantidade_em_stock, stock_ginasio, sku } = variantData;
