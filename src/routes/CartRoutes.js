@@ -8,6 +8,6 @@ router.use(userMiddleware);
 router.get('/listar', cartController.getCart);
 router.post('/adicionar', cartController.addToCart);
 router.patch('/atualizar', cartController.updateQuantity);
-router.delete('/remover/:productId', cartController.removeFromCart);
+router.delete('/remover/:variantId', cartController.removeFromCart);
 
 module.exports = router;
