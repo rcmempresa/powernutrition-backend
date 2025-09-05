@@ -28,22 +28,32 @@ const addFavorite = async (req, res) => {
 // Função para remover um produto dos favoritos
 const removeFavorite = async (req, res) => {
   const userId = req.user.id; 
-  
+  // O ID da VARIANTE a ser removida virá na URL, e é convertido para número
   const variantId = parseInt(req.params.variantId); 
 
+  // --- Adicione estas linhas para ver o valor ---
+  console.log('Valor recebido do URL para variantId:', req.params.variantId);
+  console.log('Valor de variantId depois do parseInt:', variantId);
+  // ----------------------------------------------
+
+  // Validação básica: verifica se o variantId é um número válido
   if (isNaN(variantId)) {
     return res.status(400).json({ message: 'ID de variante inválido.' });
   }
 
   try {
+    // Chama a função do modelo para remover a variante dos favoritos
     const deletedFavorite = await favoriteModel.removeFavoriteProduct(userId, variantId);
+    // Se a função do modelo retornar um registo, significa que foi eliminado
     if (deletedFavorite) {
       res.status(200).json({ message: 'Variante removida dos favoritos com sucesso.', deletedFavorite });
     } else {
+      // Se não houver retorno, a variante não foi encontrada nos favoritos do utilizador
       res.status(404).json({ message: 'Variante não encontrada nos favoritos do utilizador.' });
     }
   } catch (error) {
     console.error('Erro ao remover favorito:', error);
+    // Em caso de erro, retorna uma mensagem de erro 500
     res.status(500).json({ message: 'Erro interno do servidor ao remover favorito.' });
   }
 };
