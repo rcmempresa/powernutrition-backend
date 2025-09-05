@@ -43,7 +43,7 @@ const removeFavorite = async (req, res) => {
 
   try {
     // Chama a função do modelo para remover a variante dos favoritos
-    const deletedFavorite = await favoriteModel.removeFavoriteProduct(userId, variantId);
+    const deletedFavorite = await favoriteModel.removeFavoriteVariant(userId, variantId);
     // Se a função do modelo retornar um registo, significa que foi eliminado
     if (deletedFavorite) {
       res.status(200).json({ message: 'Variante removida dos favoritos com sucesso.', deletedFavorite });
