@@ -268,7 +268,7 @@ const getProductDetails = async (productId) => {
       FROM variantes v
       LEFT JOIN flavors f ON v.sabor_id = f.id
       WHERE v.produto_id = $1
-      ORDER BY v.peso_g ASC`,
+      ORDER BY v.weight_value ASC`, // 💡 CORRIGIDO AQUI!
       [productId]
     );
     
