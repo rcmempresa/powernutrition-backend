@@ -64,6 +64,33 @@ const getCartItems = async (cartId) => {
   );
   return result.rows;
 };
+
+// models/CartModel.js
+
+const getCartItems = async (cartId) => {
+  const result = await db.query(
+    `SELECT
+        ci.*,
+        v.id AS variant_id,
+        v.sabor_id,
+        v.weight_value,
+        v.weight_unit,
+        v.sku,
+        p.name AS product_name,
+        p.description AS product_description,
+        p.image_url AS product_image,
+        b.name AS brand_name,
+        f.name AS flavor_name   -- ✨ NOVO: Adicione o nome do sabor
+     FROM cart_items ci
+     JOIN variantes v ON ci.variant_id = v.id
+     JOIN products p ON v.produto_id = p.id
+     JOIN brands b ON p.brand_id = b.id
+     JOIN flavors f ON v.sabor_id = f.id  
+     WHERE ci.cart_id = $1`,
+    [cartId]
+  );
+  return result.rows;
+};
 // ✨ Atualiza a quantidade do item com base no variant_id
 const updateItemQuantity = async (cartId, variantId, quantity) => {
     console.log('➡️ A atualizar item do carrinho:', { cartId, variantId, quantity });
