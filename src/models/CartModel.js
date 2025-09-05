@@ -42,31 +42,6 @@ const addItemToCart = async (cartId, variantId, quantity, price) => {
 
 
 
-// ✨ Pega nos itens do carrinho, juntando-os com as tabelas de variantes e produtos
-const getCartItems = async (cartId) => {
-  const result = await db.query(
-    `SELECT
-        ci.*,
-        v.sabor_id,
-        v.weight_value,
-        v.weight_unit,
-        v.sku,
-        p.name AS product_name,
-        p.description AS product_description,
-        p.image_url AS product_image,
-        b.name AS brand_name  -- ✨ Obter o nome da marca da nova tabela
-     FROM cart_items ci
-     JOIN variantes v ON ci.variant_id = v.id
-     JOIN products p ON v.produto_id = p.id
-     JOIN brands b ON p.brand_id = b.id -- ✨ Juntar com a tabela de marcas
-     WHERE ci.cart_id = $1`,
-    [cartId]
-  );
-  return result.rows;
-};
-
-// models/CartModel.js
-
 const getCartItems = async (cartId) => {
   const result = await db.query(
     `SELECT
