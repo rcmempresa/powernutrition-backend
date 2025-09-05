@@ -15,9 +15,9 @@ const addFavorite = async (req, res) => {
     const favorite = await favoriteModel.addFavoriteVariant(userId, variantId);
     
     if (favorite) {
-      res.status(201).json({ message: 'Variante adicionada aos favoritos com sucesso.', favorite });
+      res.status(201).json({ message: 'Produto adicionado aos favoritos com sucesso.', favorite });
     } else {
-      res.status(200).json({ message: 'Variante já se encontra nos favoritos.' });
+      res.status(200).json({ message: 'Produto já se encontra nos favoritos.' });
     }
   } catch (error) {
     console.error('Erro ao adicionar favorito:', error);
