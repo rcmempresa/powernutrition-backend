@@ -40,6 +40,8 @@ const addItemToCart = async (cartId, variantId, quantity, price) => {
   return inserted.rows[0];
 };
 
+
+
 // ✨ Pega nos itens do carrinho, juntando-os com as tabelas de variantes e produtos
 const getCartItems = async (cartId) => {
   const result = await db.query(
@@ -99,5 +101,5 @@ module.exports = {
   getCartItems,
   updateItemQuantity,
   removeItemFromCart,
-  findCartByUserId
+  findCartByUserId,
 };

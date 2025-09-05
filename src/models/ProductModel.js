@@ -307,6 +307,19 @@ const getProductDetails = async (productId) => {
   }
 };
 
+
+const findVariantById = async (variantId) => {
+    try {
+        const result = await db.query(
+            'SELECT * FROM variantes WHERE id = $1', 
+            [variantId]
+        );
+        return result.rows[0]; // Retorna a primeira linha encontrada ou undefined
+    } catch (error) {
+        console.error('Erro ao buscar variante por ID:', error);
+        throw error;
+    }
+};
 module.exports = {
   listProducts,
   findProductById,
@@ -319,5 +332,6 @@ module.exports = {
   decrementStockGinasio,
   createProductAndVariant,
   addVariantToProduct,
-  getProductDetails
+  getProductDetails,
+  findVariantById
 };
