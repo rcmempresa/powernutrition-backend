@@ -42,7 +42,7 @@ const listProducts = async () => {
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN brands b ON p.brand_id = b.id
-      LEFT JOIN variants v ON p.id = v.produto_id
+      LEFT JOIN variantes v ON p.id = v.produto_id  -- AQUI ESTÁ A CORREÇÃO
       LEFT JOIN flavors f ON v.sabor_id = f.id
       WHERE p.is_active = true
       GROUP BY p.id, c.name, b.name
