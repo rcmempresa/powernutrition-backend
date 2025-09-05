@@ -33,9 +33,12 @@ require('dotenv').config();
 app.use(express.json());
 
 const corsOptions = {
-  origin: 'https://www.rdpowernutrition.pt',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], // Métodos que a sua API usa
-  optionsSuccessStatus: 200 // Algumas versões de navegadores mais antigos precisam disso
+  origin: [
+    'https://www.rdpowernutrition.pt',
+    'https://powernutrition-fr-git-7a9b89-rodrigo-mirandas-projects-77074af9.vercel.app'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions));
