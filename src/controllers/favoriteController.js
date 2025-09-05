@@ -58,20 +58,23 @@ const removeFavorite = async (req, res) => {
   }
 };
 
-// Função para listar os produtos favoritos de um utilizador
-const listFavorites = async (req, res) => {
-  // Assume que o ID do utilizador é proveniente do middleware de autenticação
-  const userId = req.user.id; 
 
+const listFavorites = async (req, res) => {
+  const userId = req.user.id;
+
+  // ✨ Adicione este log para verificar o user ID
+  console.log('ID do utilizador a ser passado para o modelo:', userId);
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Autenticação necessária.' });
+  }
+  
   try {
-    // Chama a função do modelo para obter todos os produtos favoritos do utilizador
     const favorites = await favoriteModel.getFavoriteProductsByUserId(userId);
-    // Retorna a lista de favoritos com status 200
     res.status(200).json(favorites);
   } catch (error) {
-    console.error('Erro ao listar favoritos:', error);
-    // Em caso de erro, retorna uma mensagem de erro 500
-    res.status(500).json({ message: 'Erro interno do servidor ao listar favoritos.' });
+    console.error('Erro no controller ao listar favoritos:', error);
+    res.status(500).json({ message: 'Erro interno do servidor ao obter favoritos.' });
   }
 };
 
