@@ -19,6 +19,31 @@ const addFavoriteProduct = async (userId, productId) => {
   }
 };
 
+const addFavoriteVariant = async (userId, variantId) => {
+  const query = `
+    INSERT INTO favorites (user_id, variant_id)
+    VALUES ($1, $2)
+    ON CONFLICT (user_id, variant_id) DO NOTHING
+    RETURNING *;
+  `;
+  const values = [userId, variantId];
+
+  try {
+    const result = await db.query(query, values);
+    
+    // Se a inserção foi bem-sucedida, result.rows terá um elemento.
+    // Se a linha já existia (ON CONFLICT DO NOTHING), result.rows estará vazio.
+    const addedFavorite = result.rows[0];
+
+    // Retorna a linha adicionada, ou null se já existia.
+    return addedFavorite || null; 
+    
+  } catch (error) {
+    console.error('Erro no modelo ao adicionar favorito:', error);
+    throw error; // Propaga o erro para o controlador lidar com ele
+  }
+};
+
 // Função para remover um produto dos favoritos de um utilizador
 const removeFavoriteProduct = async (userId, productId) => {
   try {
@@ -118,4 +143,5 @@ module.exports = {
   removeFavoriteProduct,
   getFavoriteProductsByUserId,
   isProductFavorite,
+  addFavoriteVariant
 };
