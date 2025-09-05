@@ -116,8 +116,8 @@ const createProductAndVariant = async (data) => {
         variant.flavor_id,
         variant.weight_value,
         variant.weight_unit,
-        variant.price,
-        variant.stock_quantity,
+        variant.preco,
+        variant.quantidade_em_stock,
         variant.stock_ginasio,
         variant.sku,
       ]

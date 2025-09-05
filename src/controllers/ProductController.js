@@ -31,8 +31,6 @@ const getProductById = async (req, res) => {
     if (!product) {
       return res.status(404).json({ message: 'Produto não encontrado.' });
     }
-    
-    // Se o produto for encontrado, retorna os dados com status 200
     res.json(product);
     
   } catch (error) {
