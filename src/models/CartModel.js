@@ -45,18 +45,17 @@ const getCartItems = async (cartId) => {
   const result = await db.query(
     `SELECT
         ci.*,
-        v.image_url as variant_image,
         v.flavor_id,
         v.weight_value,
         v.weight_unit,
         v.sku,
         p.name AS product_name,
         p.description AS product_description,
-        p.image_url AS product_image,
+        p.image_url AS product_image, -- ✨ A imagem do produto vem da tabela 'p' (products)
         p.brand_name
      FROM cart_items ci
      JOIN variantes v ON ci.variant_id = v.id
-     JOIN products p ON v.produto_id = p.id  -- ✨ AQUI: Alterar 'v.product_id' para 'v.produto_id'
+     JOIN products p ON v.produto_id = p.id
      WHERE ci.cart_id = $1`,
     [cartId]
   );
