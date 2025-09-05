@@ -47,7 +47,7 @@ const removeFavoriteProduct = async (userId, variantId) => {
     const result = await db.query(
       `DELETE FROM user_favorites
        WHERE user_id = $1 AND variant_id = $2
-       RETURNING *`, // Retorna o registo eliminado
+       RETURNING *`, 
       [userId, variantId]
     );
     // Retorna o primeiro registo eliminado (se houver)
