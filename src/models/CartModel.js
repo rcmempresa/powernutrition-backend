@@ -55,7 +55,7 @@ const getCartItems = async (cartId) => {
         p.image_url AS product_image,
         p.brand_name
      FROM cart_items ci
-     JOIN variantes v ON ci.variant_id = v.id  // ✨ Change "variants" to "variantes"
+     JOIN variantes v ON ci.variant_id = v.id
      JOIN products p ON v.product_id = p.id
      WHERE ci.cart_id = $1`,
     [cartId]
