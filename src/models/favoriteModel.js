@@ -1,25 +1,6 @@
 // src/models/favoriteModel.js
-const db = require('../config/db'); 
+const db = require('../config/db');
 
-// Função para adicionar um produto aos favoritos de um utilizador
-const addFavoriteProduct = async (userId, productId) => {
-  try {
-    const result = await db.query(
-      `INSERT INTO user_favorites (user_id, product_id)
-       VALUES ($1, $2)
-       ON CONFLICT (user_id, product_id) DO NOTHING
-       RETURNING *`, // Retorna o registo inserido se não houver conflito
-      [userId, productId]
-    );
-    // Retorna o primeiro registo inserido (se houver), ou null se já existia (ON CONFLICT DO NOTHING)
-    return result.rows[0]; 
-  } catch (error) {
-    console.error('Erro no modelo ao adicionar produto aos favoritos:', error);
-    throw error;
-  }
-};
-
-// A função agora usa product_id e insere na tabela user_favorites
 const addFavoriteVariant = async (userId, variantId) => {
   const query = `
     INSERT INTO user_favorites (user_id, variant_id)
@@ -28,54 +9,29 @@ const addFavoriteVariant = async (userId, variantId) => {
     RETURNING *;
   `;
   const values = [userId, variantId];
-
   try {
     const result = await db.query(query, values);
-    const addedFavorite = result.rows[0];
-
-    return addedFavorite || null; 
-    
+    return result.rows[0] || null;
   } catch (error) {
     console.error('Erro no modelo ao adicionar favorito:', error);
     throw error;
   }
 };
 
-// Função para remover um produto dos favoritos de um utilizador
-const removeFavoriteProduct = async (userId, variantId) => {
+const removeFavoriteVariant = async (userId, variantId) => {
   try {
     const result = await db.query(
       `DELETE FROM user_favorites
        WHERE user_id = $1 AND variant_id = $2
-       RETURNING *`, 
+       RETURNING *`,
       [userId, variantId]
     );
-    // Retorna o primeiro registo eliminado (se houver)
     return result.rows[0];
   } catch (error) {
-    console.error('Erro no modelo ao remover produto dos favoritos:', error);
+    console.error('Erro no modelo ao remover favorito:', error);
     throw error;
   }
 };
-// Função para verificar se um produto está nos favoritos de um utilizador
-const isProductFavorite = async (userId, productId) => {
-  try {
-    const result = await db.query(
-      `SELECT 1 FROM user_favorites
-       WHERE user_id = $1 AND product_id = $2`,
-      [userId, productId]
-    );
-    // Retorna true se encontrar um registo, false caso contrário
-    return result.rows.length > 0;
-  } catch (error) {
-    console.error('Erro no modelo ao verificar se produto é favorito:', error);
-    throw error;
-  }
-};
-
-
-// Função para listar todos os produtos favoritos de um utilizador
-// src/models/favoriteModel.js
 
 const getFavoriteProductsByUserId = async (userId) => {
   try {
@@ -96,7 +52,7 @@ const getFavoriteProductsByUserId = async (userId) => {
           fl.name AS flavor_name
        FROM user_favorites uf
        JOIN variantes v ON uf.variant_id = v.id
-       JOIN products p ON v.produto_id = p.id  -- ✨ Alterado de p.product_id para p.produto_id
+       JOIN products p ON v.produto_id = p.id
        LEFT JOIN brands b ON p.brand_id = b.id
        LEFT JOIN categories c ON p.category_id = c.id
        LEFT JOIN flavors fl ON v.sabor_id = fl.id
@@ -104,7 +60,6 @@ const getFavoriteProductsByUserId = async (userId) => {
        ORDER BY uf.created_at DESC`,
       [userId]
     );
-
     return result.rows;
   } catch (error) {
     console.error('Erro no modelo ao obter favoritos do utilizador:', error);
@@ -113,9 +68,7 @@ const getFavoriteProductsByUserId = async (userId) => {
 };
 
 module.exports = {
-  addFavoriteProduct,
-  removeFavoriteProduct,
+  addFavoriteVariant,
+  removeFavoriteVariant,
   getFavoriteProductsByUserId,
-  isProductFavorite,
-  addFavoriteVariant
 };
