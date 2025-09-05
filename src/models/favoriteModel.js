@@ -76,6 +76,8 @@ const isProductFavorite = async (userId, productId) => {
 
 
 // Função para listar todos os produtos favoritos de um utilizador
+// src/models/favoriteModel.js
+
 const getFavoriteProductsByUserId = async (userId) => {
   try {
     const result = await db.query(
@@ -86,7 +88,7 @@ const getFavoriteProductsByUserId = async (userId) => {
           p.image_url,
           b.name AS brand_name,
           c.name AS category_name,
-          uf.variant_id, -- Seleciona diretamente o ID da variante da tabela de favoritos
+          uf.variant_id,
           v.preco,
           v.original_price,
           v.weight_value,
@@ -94,7 +96,7 @@ const getFavoriteProductsByUserId = async (userId) => {
           fl.name AS flavor_name,
           uf.created_at AS favorited_at
        FROM user_favorites uf
-       JOIN product_variants v ON uf.variant_id = v.id
+       JOIN variantes v ON uf.variant_id = v.id -- ✨ Tabela corrigida aqui
        JOIN products p ON v.product_id = p.id
        LEFT JOIN brands b ON p.brand_id = b.id
        LEFT JOIN categories c ON p.category_id = c.id
@@ -103,9 +105,6 @@ const getFavoriteProductsByUserId = async (userId) => {
        ORDER BY uf.created_at DESC`,
       [userId]
     );
-
-    // ✨ Removemos a lógica de agrupar em productsMap.
-    // O resultado da query já é a lista que o frontend precisa.
 
     return result.rows;
   } catch (error) {
