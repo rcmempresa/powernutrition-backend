@@ -16,16 +16,44 @@ const db = require('../config/db');
 };*/
 
 const listProducts = async () => {
-  const result = await db.query(
-    `SELECT
-      p.*,
-      c.name AS category_name
-    FROM products p
-    LEFT JOIN categories c ON p.category_id = c.id
-    WHERE p.is_active = true
-    ORDER BY p.created_at DESC`
-  );
-  return result.rows;
+  try {
+    const query = `
+      SELECT
+        p.*,
+        c.name AS category_name,
+        b.name AS brand_name,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', v.id,
+              'produto_id', v.produto_id,
+              'sabor_id', v.sabor_id,
+              'weight_value', v.weight_value,
+              'weight_unit', v.weight_unit,
+              'preco', v.preco,
+              'quantidade_em_stock', v.quantidade_em_stock,
+              'stock_ginasio', v.stock_ginasio,
+              'sku', v.sku,
+              'flavor_name', f.flavor_name
+            )
+          ) FILTER (WHERE v.id IS NOT NULL),
+          '[]'
+        ) AS variants
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN brands b ON p.brand_id = b.id
+      LEFT JOIN variants v ON p.id = v.produto_id
+      LEFT JOIN flavors f ON v.sabor_id = f.id
+      WHERE p.is_active = true
+      GROUP BY p.id, c.name, b.name
+      ORDER BY p.created_at DESC;
+    `;
+    const result = await db.query(query);
+    return result.rows;
+  } catch (err) {
+    console.error('Erro no modelo ao listar produtos:', err);
+    throw err;
+  }
 };
 
 const findProductById = async (id) => {
