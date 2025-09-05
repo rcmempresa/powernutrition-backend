@@ -34,7 +34,7 @@ const listProducts = async () => {
               'quantidade_em_stock', v.quantidade_em_stock,
               'stock_ginasio', v.stock_ginasio,
               'sku', v.sku,
-              'flavor_name', f.flavor_name
+              'flavor_name', f.name  -- AQUI ESTÁ A CORREÇÃO FINAL
             )
           ) FILTER (WHERE v.id IS NOT NULL),
           '[]'
@@ -42,7 +42,7 @@ const listProducts = async () => {
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN brands b ON p.brand_id = b.id
-      LEFT JOIN variantes v ON p.id = v.produto_id  -- AQUI ESTÁ A CORREÇÃO
+      LEFT JOIN variantes v ON p.id = v.produto_id
       LEFT JOIN flavors f ON v.sabor_id = f.id
       WHERE p.is_active = true
       GROUP BY p.id, c.name, b.name
