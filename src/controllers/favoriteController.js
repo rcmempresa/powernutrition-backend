@@ -46,10 +46,10 @@ const removeFavorite = async (req, res) => {
     const deletedFavorite = await favoriteModel.removeFavoriteVariant(userId, variantId);
     // Se a função do modelo retornar um registo, significa que foi eliminado
     if (deletedFavorite) {
-      res.status(200).json({ message: 'Variante removida dos favoritos com sucesso.', deletedFavorite });
+      res.status(200).json({ message: 'Produto removido dos favoritos com sucesso.', deletedFavorite });
     } else {
       // Se não houver retorno, a variante não foi encontrada nos favoritos do utilizador
-      res.status(404).json({ message: 'Variante não encontrada nos favoritos do utilizador.' });
+      res.status(404).json({ message: 'Produto não encontrado nos favoritos do utilizador.' });
     }
   } catch (error) {
     console.error('Erro ao remover favorito:', error);
