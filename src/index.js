@@ -35,7 +35,7 @@ app.use(express.json());
 const corsOptions = {
   origin: [
     'https://www.rdpowernutrition.pt',
-    'https://powernutrition-fr-git-7a9b89-rodrigo-mirandas-projects-77074af9.vercel.app/'
+    'https://powernutrition-fr-git-7a9b89-rodrigo-mirandas-projects-77074af9.vercel.app'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   optionsSuccessStatus: 200
