@@ -148,13 +148,16 @@ const findOrdersWithItemsByUserId = async (userId) => {
         json_build_object(
           'id', oi.id,
           'product_name', p.name,
+          'flavor_name', f.name,             -- ✨ ADICIONADO: Nome do sabor
           'quantity', oi.quantity,
           'price', oi.price
         )
       ) AS order_items
     FROM orders o
     JOIN order_items oi ON o.id = oi.order_id
-    JOIN products p ON oi.product_id = p.id
+    JOIN variantes v ON oi.variant_id = v.id   -- ✨ ADICIONADO: Liga aos dados da variante
+    JOIN products p ON v.produto_id = p.id
+    JOIN flavors f ON v.sabor_id = f.id      -- ✨ ADICIONADO: Liga aos dados do sabor
     WHERE o.user_id = $1
     GROUP BY o.id
     ORDER BY o.created_at DESC

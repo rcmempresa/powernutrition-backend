@@ -268,7 +268,6 @@ const listUserOrders = async (req, res) => {
 };
 
 const getUserOrdersWithDetails = async (req, res) => {
-  console.log('A função getUserOrdersWithDetails foi chamada.');
   try {
     const userId = req.user.id; 
 
