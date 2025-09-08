@@ -23,9 +23,11 @@ const getDashboardData = async () => {
     );
     const newUsers = parseInt(newUsersResult.rows[0].count, 10) || 0;
 
-    // 4. Produtos com stock baixo (apenas a contagem)
+     // 4. Produtos com stock baixo (agora junta as tabelas)
     const lowStockProductsCountResult = await db.query(
-      `SELECT COUNT(*) FROM products WHERE stock_quantity < 10`
+      `SELECT COUNT(DISTINCT p.id) FROM products p
+       JOIN variantes v ON p.id = v.product_id
+       WHERE v.stock_ginasio < 10 OR v.quantidade_em_stock < 10`
     );
     const lowStockProductsCount = parseInt(lowStockProductsCountResult.rows[0].count, 10) || 0;
 
@@ -50,9 +52,13 @@ const getDashboardData = async () => {
     
     // 6. Lista completa de produtos com stock baixo (para o modal)
     const lowStockProductsListResult = await db.query(
-      `SELECT id, name, stock_quantity, image_url 
-       FROM products 
-       WHERE stock_quantity < 10`
+      `SELECT p.id, p.name, p.image_url, 
+              SUM(v.stock_ginasio) AS total_stock_ginasio, 
+              SUM(v.quantidade_em_stock) AS total_quantidade_em_stock
+       FROM products p
+       JOIN variantes v ON p.id = v.product_id
+       WHERE v.stock_ginasio < 10 OR v.quantidade_em_stock < 10
+       GROUP BY p.id, p.name, p.image_url`
     );
     const lowStockProducts = lowStockProductsListResult.rows;
 
