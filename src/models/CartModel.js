@@ -51,11 +51,12 @@ const getCartItems = async (cartId) => {
         v.weight_value,
         v.weight_unit,
         v.sku,
+        p.id AS product_id,      
         p.name AS product_name,
         p.description AS product_description,
         p.image_url AS product_image,
         b.name AS brand_name,
-        f.name AS flavor_name   -- ✨ NOVO: Adicione o nome do sabor
+        f.name AS flavor_name
      FROM cart_items ci
      JOIN variantes v ON ci.variant_id = v.id
      JOIN products p ON v.produto_id = p.id
