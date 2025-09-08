@@ -26,7 +26,7 @@ const getDashboardData = async () => {
      // 4. Produtos com stock baixo (agora junta as tabelas)
     const lowStockProductsCountResult = await db.query(
       `SELECT COUNT(DISTINCT p.id) FROM products p
-       JOIN variantes v ON p.id = v.product_id
+       JOIN variantes v ON p.id = v.produto_id
        WHERE v.stock_ginasio < 10 OR v.quantidade_em_stock < 10`
     );
     const lowStockProductsCount = parseInt(lowStockProductsCountResult.rows[0].count, 10) || 0;
@@ -56,7 +56,7 @@ const getDashboardData = async () => {
               SUM(v.stock_ginasio) AS total_stock_ginasio, 
               SUM(v.quantidade_em_stock) AS total_quantidade_em_stock
        FROM products p
-       JOIN variantes v ON p.id = v.product_id
+       JOIN variantes v ON p.id = v.produto_id
        WHERE v.stock_ginasio < 10 OR v.quantidade_em_stock < 10
        GROUP BY p.id, p.name, p.image_url`
     );
