@@ -59,15 +59,17 @@ const checkout = async (req, res) => {
       easypayId
     );
 
-    const productsForEmail = [];
+   const productsForEmail = [];
     for (const item of cartItems) {
-      await orderModel.addOrderItem(order.id, item.product_id, item.quantity, item.price);
+      await orderModel.addOrderItem(order.id, item.variant_id, item.quantity, item.price);
 
-      const productDetails = await productModel.findProductById(item.product_id);
+      // NOTA: É necessário buscar os dados da variante, não do produto genérico
+      // Para obter o nome e sabor no e-mail, deve usar o item que já tem as informações
       productsForEmail.push({
-        name: productDetails.name,
+        name: item.product_name, // Nome já vem da query getCartItems
+        flavor: item.flavor_name, // Sabor já vem da query getCartItems
         quantity: item.quantity,
-        price: productDetails.price
+        price: item.price // Preço já vem da query
       });
     }
 

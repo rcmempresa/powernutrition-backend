@@ -61,11 +61,13 @@ const createOrder = async (userId, addressId, totalPrice, status, couponCode, pa
 };
 
 
-const addOrderItem = async (orderId, productId, quantity, price) => {
+const addOrderItem = async (orderId, variantId, quantity, price) => {
   await db.query(
-    `INSERT INTO order_items (order_id, product_id, quantity, price)
+    // ✨ ALTERADO: A query SQL para usar a coluna variant_id
+    `INSERT INTO order_items (order_id, variant_id, quantity, price)
      VALUES ($1, $2, $3, $4)`,
-    [orderId, productId, quantity, price]
+    // ✨ ALTERADO: Os parâmetros da query
+    [orderId, variantId, quantity, price]
   );
 };
 
