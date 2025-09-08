@@ -237,25 +237,27 @@ const deleteProduct = async (id) => {
   return result.rows[0];
 };
 
-const decrementStock = async (productId, quantity) => {
+const decrementStock = async (variantId, quantity) => {
   const result = await db.query(
-    `UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND stock_quantity >= $1`,
-    [quantity, productId]
+    // ✨ ALTERADO: Tabela para 'variantes' e coluna para 'quantidade_em_stock'
+    `UPDATE variantes SET quantidade_em_stock = quantidade_em_stock - $1 WHERE id = $2 AND quantidade_em_stock >= $1`,
+    [quantity, variantId]
   );
 
   if (result.rowCount === 0) {
-    throw new Error(`Não foi possível atualizar o stock do produto com ID ${productId}`);
+    throw new Error(`Não foi possível atualizar o stock da variante com ID ${variantId}. Stock insuficiente ou ID inválido.`);
   }
 };
 
-const decrementStockGinasio = async (productId, quantity) => {
+const decrementStockGinasio = async (variantId, quantity) => {
   const result = await db.query(
-    `UPDATE products SET stock_ginasio = stock_ginasio - $1 WHERE id = $2 AND stock_ginasio >= $1`,
-    [quantity, productId]
+    // Tabela e coluna alteradas para refletir a nova lógica
+    `UPDATE variantes SET stock_ginasio = stock_ginasio - $1 WHERE id = $2 AND stock_ginasio >= $1`,
+    [quantity, variantId]
   );
 
   if (result.rowCount === 0) {
-    throw new Error(`Não foi possível atualizar o stock do ginásio para o produto com ID ${productId}`);
+    throw new Error(`Não foi possível atualizar o stock do ginásio para a variante com ID ${variantId}. Stock insuficiente ou ID inválido.`);
   }
 };
 
