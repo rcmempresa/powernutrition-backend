@@ -110,16 +110,17 @@ const getOrderById = async (orderId) => {
   const order = orderResult.rows[0];
 
   if (order) {
-    // Se a encomenda for encontrada, buscamos os seus itens
+    // 1. Corrigido: Usamos a query que faz JOIN com 'variantes' e 'products'
     const itemsResult = await db.query(
       `SELECT
-        oi.product_id,
-        p.name as product_name,
+        oi.variant_id,
+        p.name AS product_name,
         p.image_url,
         oi.quantity,
-        oi.price as item_price -- Preço do item no momento da compra
+        oi.price AS item_price
       FROM order_items oi
-      JOIN products p ON oi.product_id = p.id
+      JOIN variantes v ON oi.variant_id = v.id  -- Primeiro JOIN com a tabela de variantes
+      JOIN products p ON v.produto_id = p.id  -- Segundo JOIN para obter os detalhes do produto
       WHERE oi.order_id = $1`,
       [orderId]
     );
