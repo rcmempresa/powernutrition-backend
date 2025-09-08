@@ -57,33 +57,23 @@ const gerarMoradaHtml = (morada) => {
 };
 
 const handleEasyPayCallback = async (req, res) => {
-  // A variável `req.user` não deve ser usada aqui.
-  // A requisição de callback é feita diretamente pela EasyPay,
-  // não por um utilizador logado.
-  // Você deve obter o ID do utilizador a partir da encomenda que encontrou.
-
   const notification = req.body;
   console.log('Payload de callback da EasyPay recebido:', notification);
 
-  // **PASSO CRÍTICO**: Responder rapidamente à Easypay para evitar reenvios.
   res.status(200).send('OK');
 
   try {
     let easypayId = null;
     let isPaid = false;
 
-    // Lógica para a API V3 (callback com 'status: paid')
     if (notification.status === 'paid' && notification.method?.reference) {
       isPaid = true;
       easypayId = notification.id;
-    }
-    // Lógica para a API V2 (callback sem 'status' no nível superior, mas com 'transaction.values.paid')
-    else if (notification.transaction?.values?.paid && notification.method === 'MB') {
+    } else if (notification.transaction?.values?.paid && notification.method === 'MB') {
       isPaid = true;
       easypayId = notification.id;
     }
 
-    // Se o callback não for de um pagamento concluído, a função termina aqui.
     if (!isPaid) {
       console.warn(`Callback da EasyPay recebido, mas não é uma notificação de pagamento concluído.`);
       return;
@@ -91,7 +81,6 @@ const handleEasyPayCallback = async (req, res) => {
 
     console.log(`Pagamento confirmado! A referência para a busca é: ${easypayId}`);
 
-    // **PASSO CRÍTICO**: Procurar na base de dados pelo ID do pagamento da EasyPay.
     const existingOrder = await orderModel.getOrderByEasyPayId(easypayId);
 
     if (!existingOrder) {
@@ -99,42 +88,47 @@ const handleEasyPayCallback = async (req, res) => {
       return;
     }
 
-    // Prevenção de processamento duplicado para evitar que emails sejam enviados várias vezes.
     if (existingOrder.status === 'pago') {
       console.log(`Pedido #${existingOrder.id} já foi processado. A ignorar callback.`);
       return;
     }
     
-    // Atualiza o status da encomenda para "pago".
     const updatedOrder = await orderModel.updatePaymentStatus(existingOrder.id, 'pago');
     console.log(`Pedido #${updatedOrder.id} marcado como pago.`);
 
     // --- CORREÇÃO AQUI ---
-    // Buscar os itens da encomenda ANTES de tentar atualizar o stock.
+    // A sua função getOrderItems precisa de ser alterada para devolver o variant_id.
     const orderItems = await orderModel.getOrderItems(updatedOrder.id);
-    const ID_UTILIZADOR_ESPECIFICO = '12345';
-    const userId = updatedOrder.user_id; // Obter o ID do utilizador da própria encomenda
+    
+    // Obtém o ID do utilizador da própria encomenda.
+    const userId = updatedOrder.user_id;
+    
+    // Supondo que 'ID_UTILIZADOR_ESPECIFICO' é um ID de utilizador de um ginásio.
+    // Esta é uma lógica muito rígida, considere uma abordagem mais flexível no futuro.
+    const ID_UTILIZADOR_ESPECIFICO = '12345'; // Exemplo, substitua pelo ID real
 
-    // Iterar sobre cada item para decrementar o stock corretamente
+    // Iterar sobre cada item para diminuir o stock corretamente.
     for (const item of orderItems) {
+      // ✨ CORREÇÃO: Usar item.variant_id
       if (userId === ID_UTILIZADOR_ESPECIFICO) {
-        await productModel.decrementStockGinasio(item.product_id, item.quantity);
+        await productModel.decrementStockGinasio(item.variant_id, item.quantity);
       } else {
-        await productModel.decrementStock(item.product_id, item.quantity);
+        await productModel.decrementStock(item.variant_id, item.quantity);
       }
     }
 
-    // --- A sua lógica de envio de emails começa aqui ---
+    // --- Lógica de e-mail e outras ações ---
     const user = await userModel.getUserById(updatedOrder.user_id);
     const shippingAddress = await addressModel.getAddressById(updatedOrder.address_id);
 
-    // Gerar HTML para os emails
+    // Gerar HTML para os emails (certifique-se de que estas funções existem)
     const tabelaHtml = gerarTabelaProdutos(orderItems);
     const moradaHtml = gerarMoradaHtml(shippingAddress);
 
     // Enviar e-mail de notificação para o dono da loja
     const shopOwnerEmail = process.env.SHOP_OWNER_EMAIL;
     if (shopOwnerEmail) {
+        // ... (HTML do email do dono da loja, que parece estar correto)
         const ownerEmailSubject = `[PAGO] Nova Encomenda #${updatedOrder.id} Recebida!`;
         const ownerEmailHtml = `
             <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1f2937; background-color: #f3f4f6; padding: 20px;">
@@ -197,7 +191,8 @@ const handleEasyPayCallback = async (req, res) => {
         </div>
       `;
       try {
-          await (user.email, clientEmailSubject, clientEmailHtml);
+          // ✨ CORREÇÃO: Adicionar o nome da função 'sendEmail'
+          await sendEmail(user.email, clientEmailSubject, clientEmailHtml);
           console.log(`E-mail de confirmação de pagamento para o cliente ${user.email} enviado.`);
       } catch (emailError) {
           console.error('Erro ao enviar e-mail para o cliente:', emailError);
