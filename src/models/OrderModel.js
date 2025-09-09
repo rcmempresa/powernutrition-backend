@@ -128,6 +128,7 @@ const getOrderById = async (orderId) => {
   }
   return order; // Retorna a encomenda com todos os detalhes e os seus itens
 };
+
 const clearCart = async (cartId) => {
   await db.query('DELETE FROM cart_items WHERE cart_id = $1', [cartId]);
 };
