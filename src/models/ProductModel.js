@@ -163,6 +163,12 @@ const createProductWithVariants = async (productData, variants) => {
   const client = await db.connect();
 
   try {
+    // 💡 NOVO: Validação para garantir que o nome do produto não é nulo ou vazio
+    if (!productData.name || productData.name.trim() === '') {
+        await client.query('ROLLBACK');
+        throw new Error('O nome do produto é obrigatório.');
+    }
+
     await client.query('BEGIN');
 
     // Insere o produto na tabela "products"
