@@ -203,29 +203,21 @@ const addVariantToProduct = async (productId, variantData) => {
 
 
 const updateProduct = async (id, productData) => {
-  const {
-    name, description, price, original_price, stock_quantity,
-    sku, image_url, category_id, brand,
-    weight_unit, weight_value, flavor_id, is_active,
-    stock_ginasio 
-  } = productData;
+  const { name, description, brand_id, image_url, category_id, original_price, is_active } = productData;
 
   const result = await db.query(
     `UPDATE products SET
-      name = $1, description = $2, price = $3, original_price = $4, stock_quantity = $5,
-      sku = $6, image_url = $7, category_id = $8, brand = $9,
-      weight_unit = $10, weight_value = $11, flavor_id = $12, is_active = $13,
-      stock_ginasio = $14, 
+      name = $1, 
+      description = $2, 
+      brand_id = $3, 
+      image_url = $4, 
+      category_id = $5, 
+      original_price = $6,
+      is_active = $7, 
       updated_at = CURRENT_TIMESTAMP
-    WHERE id = $15  
+    WHERE id = $8
     RETURNING *`,
-    [
-      name, description, price, original_price, stock_quantity,
-      sku, image_url, category_id, brand,
-      weight_unit, weight_value, flavor_id, is_active,
-      stock_ginasio, 
-      id 
-    ]
+    [name, description, brand_id, image_url, category_id, original_price, is_active, id]
   );
   return result.rows[0];
 };
