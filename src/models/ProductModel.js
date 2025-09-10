@@ -159,6 +159,65 @@ const createProductAndVariant = async (data) => {
   }
 };
 
+const createProductWithVariants = async (productData, variants) => {
+  const client = await db.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // Insere o produto na tabela "products"
+    const productResult = await client.query(
+      `INSERT INTO products (
+        name, description, brand_id, image_url, category_id, original_price
+      ) VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *`,
+      [
+        productData.name,
+        productData.description,
+        productData.brand_id,
+        productData.image_url,
+        productData.category_id,
+        productData.original_price, 
+      ]
+    );
+
+    const newProductId = productResult.rows[0].id;
+
+    const createdVariants = [];
+    
+    // 💡 CORRIGIDO: Itera sobre a matriz de variantes e insere cada uma.
+    for (const variant of variants) {
+        const variantResult = await client.query(
+            `INSERT INTO variantes (
+                produto_id, sabor_id, weight_value, weight_unit, preco,
+                quantidade_em_stock, stock_ginasio, sku
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING *`,
+            [
+                newProductId,
+                variant.sabor_id,
+                variant.weight_value,
+                variant.weight_unit,
+                variant.preco,
+                variant.quantidade_em_stock,
+                variant.stock_ginasio,
+                variant.sku,
+            ]
+        );
+        createdVariants.push(variantResult.rows[0]);
+    }
+
+    await client.query('COMMIT');
+    return { product: productResult.rows[0], variants: createdVariants };
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
 
 const addVariantToProduct = async (productId, variantData) => {
   const { sabor_id, weight_value, weight_unit, preco, quantidade_em_stock, stock_ginasio, sku } = variantData;
@@ -335,5 +394,6 @@ module.exports = {
   createProductAndVariant,
   addVariantToProduct,
   getProductDetails,
-  findVariantById
+  findVariantById,
+  createProductWithVariants
 };
