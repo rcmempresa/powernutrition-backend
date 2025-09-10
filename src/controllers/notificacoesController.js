@@ -111,8 +111,10 @@ const handleEasyPayCallback = async (req, res) => {
     for (const item of orderItems) {
       // ✨ CORREÇÃO: Usar item.variant_id
       if (userId === ID_UTILIZADOR_ESPECIFICO) {
+         console.log(`[LOG] A diminuir o stock do ginásio para o item de variante ${item.variant_id} em ${item.quantity}.`);
         await productModel.decrementStockGinasio(item.variant_id, item.quantity);
       } else {
+         console.log(`[LOG] A diminuir o stock do ginásio para o item de variante ${item.variant_id} em ${item.quantity}.`);
         await productModel.decrementStock(item.variant_id, item.quantity);
       }
     }
