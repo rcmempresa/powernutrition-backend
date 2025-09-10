@@ -126,7 +126,7 @@ const updateProduct = async (req, res) => {
 };
 
 const updateVariant = async (req, res) => {
-  const { productId, variantId } = req.params;
+  const { variantId } = req.params;
   const variantData = req.body;
 
   try {
@@ -135,23 +135,14 @@ const updateVariant = async (req, res) => {
       return res.status(400).json({ message: 'Dados de atualização da variante não fornecidos.' });
     }
 
-    // 2. Encontrar a variante no banco de dados.
-    // Você precisa de uma lógica para garantir que a variante pertence ao produto correto.
-    const variant = await productModel.findVariantById({ 
-      where: {
-        id: variantId,
-        produto_id: productId, // Crucial para a segurança
-      },
-    });
+    // 2. Chama a função do modelo para atualizar a variante
+    const updatedVariant = await productModel.updateVariant(variantId, variantData);
 
-    if (!variant) {
-      return res.status(404).json({ message: 'Variante não encontrada para este produto.' });
+    if (!updatedVariant) {
+      return res.status(404).json({ message: 'Variante não encontrada.' });
     }
 
-    // 3. Atualizar os campos da variante.
-    await variant.update(variantData);
-
-    return res.status(200).json({ message: 'Variante atualizada com sucesso.', variant });
+    return res.status(200).json({ message: 'Variante atualizada com sucesso.', variant: updatedVariant });
   } catch (error) {
     console.error('Erro ao atualizar variante:', error);
     return res.status(500).json({ message: 'Erro interno do servidor ao atualizar a variante.' });

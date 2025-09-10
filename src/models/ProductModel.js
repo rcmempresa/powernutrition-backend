@@ -222,6 +222,26 @@ const updateProduct = async (id, productData) => {
   return result.rows[0];
 };
 
+
+const updateVariant = async (variantId, variantData) => {
+  const { sabor_id, weight_value, weight_unit, preco, quantidade_em_stock, stock_ginasio, sku } = variantData;
+  const result = await db.query(
+    `UPDATE variantes SET
+      sabor_id = $1,
+      weight_value = $2,
+      weight_unit = $3,
+      preco = $4,
+      quantidade_em_stock = $5,
+      stock_ginasio = $6,
+      sku = $7,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = $8
+    RETURNING *`,
+    [sabor_id, weight_value, weight_unit, preco, quantidade_em_stock, stock_ginasio, sku, variantId]
+  );
+  return result.rows[0];
+};
+
 const deleteProduct = async (id) => {
   // Soft delete: marca is_active = false
   const result = await db.query(
@@ -329,5 +349,6 @@ module.exports = {
   createProductAndVariant,
   addVariantToProduct,
   getProductDetails,
-  findVariantById
+  findVariantById,
+  updateVariant
 };
