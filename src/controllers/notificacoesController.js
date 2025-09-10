@@ -74,71 +74,55 @@ const handleEasyPayCallback = async (req, res) => {
       easypayId = notification.id;
     }
 
-    console.log(`[LOG] Estado de isPaid após a verificação inicial: ${isPaid}`);
-
     if (!isPaid) {
-      console.warn(`[WARN] Callback da EasyPay recebido, mas não é uma notificação de pagamento concluído. A terminar a execução.`);
+      console.warn(`Callback da EasyPay recebido, mas não é uma notificação de pagamento concluído.`);
       return;
     }
 
-    console.log(`[LOG] Pagamento confirmado! A referência para a busca é: ${easypayId}`);
-    
-    // --- Adição de log para rastreamento ---
-    console.log(`[LOG] A procurar por encomenda com o EasyPay ID: ${easypayId}`);
+    console.log(`Pagamento confirmado! A referência para a busca é: ${easypayId}`);
+
     const existingOrder = await orderModel.getOrderByEasyPayId(easypayId);
 
     if (!existingOrder) {
-      console.warn(`[WARN] Encomenda com o EasyPay ID ${easypayId} não encontrada. A terminar a execução.`);
+      console.warn(`Encomenda com o EasyPay ID ${easypayId} não encontrada.`);
       return;
     }
-
-    console.log(`[LOG] Encomenda #${existingOrder.id} encontrada com sucesso.`);
 
     if (existingOrder.status === 'pago') {
-      console.log(`[WARN] Pedido #${existingOrder.id} já foi processado. A ignorar callback e a terminar a execução.`);
+      console.log(`Pedido #${existingOrder.id} já foi processado. A ignorar callback.`);
       return;
     }
     
-    console.log(`[LOG] A atualizar o status da encomenda #${existingOrder.id} para 'pago'.`);
     const updatedOrder = await orderModel.updatePaymentStatus(existingOrder.id, 'pago');
-    console.log(`[SUCESSO] Pedido #${updatedOrder.id} marcado como pago.`);
+    console.log(`Pedido #${updatedOrder.id} marcado como pago.`);
 
-    // --- Início da lógica que você queria inspecionar ---
-    console.log(`[LOG] Obtendo os itens da encomenda #${updatedOrder.id} para diminuir o stock.`);
     const orderItems = await orderModel.getOrderItems(updatedOrder.id);
     
-    // Obtém o ID do utilizador da própria encomenda.
+    // --- Adição de log para verificar o conteúdo de orderItems ---
+    console.log(`Conteúdo de orderItems para o pedido #${updatedOrder.id}:`, orderItems);
+
     const userId = updatedOrder.user_id;
     
-    // Supondo que 'ID_UTILIZADOR_ESPECIFICO' é um ID de utilizador de um ginásio.
-    // Esta é uma lógica muito rígida, considere uma abordagem mais flexível no futuro.
-    const ID_UTILIZADOR_ESPECIFICO = '12345'; // Exemplo, substitua pelo ID real
+    const ID_UTILIZADOR_ESPECIFICO = '12345';
 
-    // --- Adição de log para rastreamento ---
+    console.log(`[LOG] Obtendo os itens da encomenda #${updatedOrder.id} para diminuir o stock.`);
     console.log(`[LOG] Verificando se o utilizador ${userId} é um utilizador de ginásio. `);
-
-    // Iterar sobre cada item para diminuir o stock corretamente.
     for (const item of orderItems) {
       if (userId === ID_UTILIZADOR_ESPECIFICO) {
-         console.log(`A diminuir o stock do ginásio para o item de variante ${item.variant_id} em ${item.quantity}.`);
+         console.log(`[LOG] A diminuir o stock do ginásio para o item de variante ${item.variant_id} em ${item.quantity}.`);
         await productModel.decrementStockGinasio(item.variant_id, item.quantity);
       } else {
-         console.log(`A diminuir o stock regular para o item de variante ${item.variant_id} em ${item.quantity}.`);
+         console.log(`[LOG] A diminuir o stock regular para o item de variante ${item.variant_id} em ${item.quantity}.`);
         await productModel.decrementStock(item.variant_id, item.quantity);
       }
     }
-    console.log(`[SUCESSO] O stock foi decrementado para todos os itens do pedido #${updatedOrder.id}.`);
-    // --- Fim da lógica inspecionada ---
 
-    // --- Lógica de e-mail e outras ações ---
     const user = await userModel.getUserById(updatedOrder.user_id);
     const shippingAddress = await addressModel.getAddressById(updatedOrder.address_id);
 
-    // Gerar HTML para os emails (certifique-se de que estas funções existem)
     const tabelaHtml = gerarTabelaProdutos(orderItems);
     const moradaHtml = gerarMoradaHtml(shippingAddress);
 
-    // Enviar e-mail de notificação para o dono da loja
     const shopOwnerEmail = process.env.SHOP_OWNER_EMAIL;
     if (shopOwnerEmail) {
         const ownerEmailSubject = `[PAGO] Nova Encomenda #${updatedOrder.id} Recebida!`;
@@ -180,7 +164,6 @@ const handleEasyPayCallback = async (req, res) => {
         console.warn('Variável de ambiente SHOP_OWNER_EMAIL não está definida.');
     }
 
-    // Enviar e-mail de confirmação para o cliente
     if (user?.email) {
       const clientEmailSubject = `✅ Pagamento recebido para a Encomenda #${updatedOrder.id}!`;
       const clientEmailHtml = `
