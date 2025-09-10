@@ -99,18 +99,24 @@ const createProduct = async (productData) => {
 };
 
 
-const createProductAndVariants = async (data) => {
-  const { product, variants } = data; // Note a desestruturação para 'variants' (plural)
+const createProductAndVariant = async (data) => {
+  const { product, variant } = data;
   const client = await db.connect();
 
   try {
     await client.query('BEGIN');
 
-    // 1. Inserir o produto principal (apenas uma vez)
+    const existingSku = await client.query('SELECT sku FROM variantes WHERE sku = $1', [variant.sku]);
+    if (existingSku.rows.length > 0) {
+      await client.query('ROLLBACK');
+      throw new Error('Já existe uma variante com esse SKU.');
+    }
+
+
     const productResult = await client.query(
       `INSERT INTO products (
-        name, description, brand_id, image_url, category_id, original_price, is_active
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+        name, description, brand_id, image_url, category_id, original_price
+      ) VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *`,
       [
         product.name,
@@ -118,46 +124,32 @@ const createProductAndVariants = async (data) => {
         product.brand_id,
         product.image_url,
         product.category_id,
-        product.original_price,
-        product.is_active
+        product.original_price, 
       ]
     );
 
     const newProductId = productResult.rows[0].id;
 
-    // 2. Iterar sobre o array de variantes e inseri-las uma a uma
-    const createdVariants = [];
-    for (const variant of variants) {
-      // Verificar se a SKU já existe
-      const existingSku = await client.query('SELECT sku FROM variantes WHERE sku = $1', [variant.sku]);
-      if (existingSku.rows.length > 0) {
-        await client.query('ROLLBACK');
-        throw new Error(`Já existe uma variante com o SKU: ${variant.sku}.`);
-      }
-
-      // Inserir a variante
-      const variantResult = await client.query(
-        `INSERT INTO variantes (
-          produto_id, sabor_id, weight_value, weight_unit, preco,
-          quantidade_em_stock, stock_ginasio, sku
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING *`,
-        [
-          newProductId,
-          variant.sabor_id,
-          variant.weight_value,
-          variant.weight_unit,
-          variant.preco,
-          variant.quantidade_em_stock,
-          variant.stock_ginasio,
-          variant.sku,
-        ]
-      );
-      createdVariants.push(variantResult.rows[0]);
-    }
+    const variantResult = await client.query(
+      `INSERT INTO variantes (
+        produto_id, sabor_id, weight_value, weight_unit, preco,
+        quantidade_em_stock, stock_ginasio, sku
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *`,
+      [
+        newProductId,
+        variant.sabor_id,
+        variant.weight_value,
+        variant.weight_unit,
+        variant.preco,
+        variant.quantidade_em_stock,
+        variant.stock_ginasio,
+        variant.sku,
+      ]
+    );
 
     await client.query('COMMIT');
-    return { product: productResult.rows[0], variants: createdVariants };
+    return { product: productResult.rows[0], variant: variantResult.rows[0] };
 
   } catch (error) {
     await client.query('ROLLBACK');
