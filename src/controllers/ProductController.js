@@ -101,17 +101,65 @@ const addVariantToProduct = async (req, res) => {
   }
 };
 
-
 const updateProduct = async (req, res) => {
+  const { id } = req.params;
+  const productData = req.body;
+
   try {
-    const updatedProduct = await productModel.updateProduct(req.params.id, req.body);
-    if (!updatedProduct) return res.status(404).json({ message: 'Produto não encontrado' });
-    res.json(updatedProduct);
-  } catch (err) {
-    console.error('Erro ao atualizar produto:', err);
-    res.status(500).json({ message: 'Erro interno no servidor' });
+    // 1. Validar a entrada (opcional, mas recomendado)
+    if (!productData || Object.keys(productData).length === 0) {
+      return res.status(400).json({ message: 'Dados de atualização do produto não fornecidos.' });
+    }
+
+    // 2. Tentar encontrar o produto no banco de dados.
+    const product = await productModel.findProductById(id); 
+    if (!product) {
+      return res.status(404).json({ message: 'Produto não encontrado.' });
+    }
+
+    // 3. Atualizar os campos do produto
+    await product.update(productData);
+
+    return res.status(200).json({ message: 'Produto atualizado com sucesso.', product });
+  } catch (error) {
+    console.error('Erro ao atualizar produto:', error);
+    return res.status(500).json({ message: 'Erro interno do servidor ao atualizar o produto.' });
   }
 };
+
+const updateVariant = async (req, res) => {
+  const { productId, variantId } = req.params;
+  const variantData = req.body;
+
+  try {
+    // 1. Validar a entrada
+    if (!variantData || Object.keys(variantData).length === 0) {
+      return res.status(400).json({ message: 'Dados de atualização da variante não fornecidos.' });
+    }
+
+    // 2. Encontrar a variante no banco de dados.
+    // Você precisa de uma lógica para garantir que a variante pertence ao produto correto.
+    const variant = await productModel.findVariantById({ 
+      where: {
+        id: variantId,
+        produto_id: productId, // Crucial para a segurança
+      },
+    });
+
+    if (!variant) {
+      return res.status(404).json({ message: 'Variante não encontrada para este produto.' });
+    }
+
+    // 3. Atualizar os campos da variante.
+    await variant.update(variantData);
+
+    return res.status(200).json({ message: 'Variante atualizada com sucesso.', variant });
+  } catch (error) {
+    console.error('Erro ao atualizar variante:', error);
+    return res.status(500).json({ message: 'Erro interno do servidor ao atualizar a variante.' });
+  }
+};
+
 
 const deleteProduct = async (req, res) => {
   try {
@@ -131,5 +179,6 @@ module.exports = {
   updateProduct,
   deleteProduct,
   createProductAndVariant,
-  addVariantToProduct
+  addVariantToProduct,
+  updateVariant
 };
