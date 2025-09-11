@@ -56,73 +56,87 @@ const gerarMoradaHtml = (morada) => {
   `;
 };
 
+// Esta função processa as notificações de pagamento recebidas da EasyPay.
+// É crucial que a resposta 'OK' seja enviada o mais rápido possível para evitar novas tentativas da EasyPay.
 const handleEasyPayCallback = async (req, res) => {
   const notification = req.body;
   console.log('Payload de callback da EasyPay recebido:', notification);
 
+  // Envia a resposta imediatamente para confirmar o recebimento do callback.
   res.status(200).send('OK');
 
   try {
     let easypayId = null;
     let isPaid = false;
 
-    if (notification.status === 'paid' && notification.method?.reference) {
-      isPaid = true;
-      easypayId = notification.id;
-    } else if (notification.transaction?.values?.paid && notification.method === 'MB') {
+    // --- Etapa 1: Verificar se o pagamento foi concluído e extrair o ID da EasyPay ---
+    // A validação do estado do pagamento deve ser robusta, verificando diferentes estruturas de notificação.
+    const isPaidWithReference = notification.status === 'paid' && notification.method?.reference;
+    const isPaidWithMb = notification.transaction?.values?.paid && notification.method === 'MB';
+
+    if (isPaidWithReference || isPaidWithMb) {
       isPaid = true;
       easypayId = notification.id;
     }
 
     if (!isPaid) {
-      console.warn(`Callback da EasyPay recebido, mas não é uma notificação de pagamento concluído.`);
+      console.warn(`Callback da EasyPay recebido, mas não é uma notificação de pagamento concluído. Status: ${notification.status}`);
       return;
     }
 
-    console.log(`Pagamento confirmado! A referência para a busca é: ${easypayId}`);
+    console.log(`Pagamento confirmado! O ID da EasyPay para a busca é: ${easypayId}`);
 
+    // --- Etapa 2: Validar e processar a encomenda na base de dados ---
     const existingOrder = await orderModel.getOrderByEasyPayId(easypayId);
 
     if (!existingOrder) {
-      console.warn(`Encomenda com o EasyPay ID ${easypayId} não encontrada.`);
+      console.warn(`Encomenda com o EasyPay ID ${easypayId} não encontrada. A ignorar o callback.`);
       return;
     }
 
     if (existingOrder.status === 'pago') {
-      console.log(`Pedido #${existingOrder.id} já foi processado. A ignorar callback.`);
+      console.log(`Pedido #${existingOrder.id} já foi processado. A ignorar este callback para evitar duplicidade.`);
       return;
     }
     
+    // Atualizar o status do pagamento para 'pago'
     const updatedOrder = await orderModel.updatePaymentStatus(existingOrder.id, 'pago');
-    console.log(`Pedido #${updatedOrder.id} marcado como pago.`);
+    console.log(`Pedido #${updatedOrder.id} marcado como pago com sucesso.`);
 
+    // --- Etapa 3: Decrementar o stock com base no tipo de utilizador ---
     const orderItems = await orderModel.getOrderItems(updatedOrder.id);
-    
-    // --- Adição de log para verificar o conteúdo de orderItems ---
-    console.log(`Conteúdo de orderItems para o pedido #${updatedOrder.id}:`, orderItems);
-
     const userId = updatedOrder.user_id;
-    
-    const ID_UTILIZADOR_ESPECIFICO = '12345';
 
-    console.log(`[LOG] Obtendo os itens da encomenda #${updatedOrder.id} para diminuir o stock.`);
-    console.log(`[LOG] Verificando se o utilizador ${userId} é um utilizador de ginásio. `);
-    for (const item of orderItems) {
-      if (userId === ID_UTILIZADOR_ESPECIFICO) {
-         console.log(`[LOG] A diminuir o stock do ginásio para o item de variante ${item.variant_id} em ${item.quantity}.`);
-        await productModel.decrementStockGinasio(item.variant_id, item.quantity);
-      } else {
-         console.log(`[LOG] A diminuir o stock regular para o item de variante ${item.variant_id} em ${item.quantity}.`);
-        await productModel.decrementStock(item.variant_id, item.quantity);
+    console.log(`Conteúdo de orderItems para o pedido #${updatedOrder.id}:`, orderItems);
+    
+    if (orderItems.length === 0) {
+      console.warn(`O array orderItems está vazio para o pedido #${updatedOrder.id}. Não há stock para decrementar.`);
+      // A função continua para o envio de e-mails, mas o loop é ignorado.
+    } else {
+      // IMPORTANTE: Este ID deve ser armazenado numa variável de ambiente (e.g., .env) por questões de segurança.
+      const ID_UTILIZADOR_ESPECIFICO = process.env.GYM_USER_ID; 
+
+      console.log(`A processar a diminuição do stock para a encomenda #${updatedOrder.id}.`);
+      
+      for (const item of orderItems) {
+        if (userId === ID_UTILIZADOR_ESPECIFICO) {
+          console.log(`Stock do ginásio a ser diminuído para o item ${item.name} (${item.variant_id}) em ${item.quantity} unidades.`);
+          await productModel.decrementStockGinasio(item.variant_id, item.quantity);
+        } else {
+          console.log(`Stock regular a ser diminuído para o item ${item.name} (${item.variant_id}) em ${item.quantity} unidades.`);
+          await productModel.decrementStock(item.variant_id, item.quantity);
+        }
       }
     }
 
+    // --- Etapa 4: Enviar e-mails de confirmação ---
     const user = await userModel.getUserById(updatedOrder.user_id);
     const shippingAddress = await addressModel.getAddressById(updatedOrder.address_id);
 
     const tabelaHtml = gerarTabelaProdutos(orderItems);
     const moradaHtml = gerarMoradaHtml(shippingAddress);
 
+    // E-mail para o dono da loja
     const shopOwnerEmail = process.env.SHOP_OWNER_EMAIL;
     if (shopOwnerEmail) {
         const ownerEmailSubject = `[PAGO] Nova Encomenda #${updatedOrder.id} Recebida!`;
@@ -164,6 +178,7 @@ const handleEasyPayCallback = async (req, res) => {
         console.warn('Variável de ambiente SHOP_OWNER_EMAIL não está definida.');
     }
 
+    // E-mail para o cliente
     if (user?.email) {
       const clientEmailSubject = `✅ Pagamento recebido para a Encomenda #${updatedOrder.id}!`;
       const clientEmailHtml = `
@@ -195,10 +210,13 @@ const handleEasyPayCallback = async (req, res) => {
       console.warn(`Nenhum e-mail de cliente encontrado para o pedido #${updatedOrder.id}.`);
     }
 
+    console.log(`Processo de notificação concluído com sucesso para a encomenda #${updatedOrder.id}.`);
+
   } catch (error) {
-    console.error('Erro ao processar notificação de pagamento:', error);
+    console.error('Erro ao processar a notificação de pagamento:', error);
   }
 };
+
 
 
 module.exports = { 
