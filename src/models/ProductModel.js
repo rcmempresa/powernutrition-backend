@@ -103,6 +103,8 @@ const createProductAndVariant = async (data) => {
   const { product, variant } = data;
   const client = await db.connect();
 
+  console.log("cheguei");
+
   try {
     await client.query('BEGIN');
 
