@@ -211,13 +211,14 @@ const getOrderByEasyPayId = async (easypayId) => {
 const getOrderItems = async (orderId) => {
   const result = await db.query(
     `SELECT 
-      oi.product_id,  
+      oi.variant_id,  
       oi.quantity,
       oi.price,
       p.name,
       p.image_url
     FROM order_items oi
-    JOIN products p ON oi.product_id = p.id
+    JOIN variantes v ON oi.variant_id = v.id
+    JOIN products p ON v.produto_id = p.id
     WHERE oi.order_id = $1`,
     [orderId]
   );
