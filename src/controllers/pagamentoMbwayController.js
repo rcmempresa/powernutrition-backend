@@ -53,12 +53,12 @@ const handleCheckout = async (req, res) => {
     };
 
     // Faz a requisição para a API EasyPay (ambiente de testes ou produção)
-    const response = await fetch('https://api.test.easypay.pt/2.0/single', {
+    const response = await fetch('https://api.prod.easypay.pt/2.0/single', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        AccountId: '4fd3b7b4-f8eb-4465-9b07-88ad9096b5de',
-        ApiKey: '3087ac59-b8cd-4f6e-bb5f-f4d99ee83629'
+        AccountId: 'd9a0e96e-7385-4f0a-b58b-1e934340c4ef',
+        ApiKey: '9cf00848-31d3-4357-80b1-a4b7f31007b0'
       },
       body: JSON.stringify(body)
     });

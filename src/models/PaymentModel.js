@@ -5,7 +5,7 @@ const PaymentModel = {
     const {
       payment_method,
       amount,
-      payment_status = 'pendente', // valor padrão se não for enviado
+      payment_status = 'pendente',
       payment_reference
     } = paymentData;
 
