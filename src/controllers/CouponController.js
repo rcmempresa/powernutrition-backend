@@ -45,10 +45,8 @@ const listCoupons = async (req, res) => {
 
 const applyCoupon = async (req, res) => {
     const { couponCode, items } = req.body;
-
-    // Adicionado console.log para inspecionar os dados de 'items'
     console.log("Dados recebidos no 'items':", items);
-
+    
     if (!couponCode) {
         return res.status(400).json({ message: 'O código do cupão é obrigatório.' });
     }
@@ -62,10 +60,9 @@ const applyCoupon = async (req, res) => {
         
         let discountApplied = 0;
         let eligibleItemFound = false;
-
-        // Itera sobre todos os itens do carrinho para encontrar o primeiro item elegível
+        
+        // Itera sobre TODOS os itens do carrinho para encontrar os elegíveis
         for (const item of items) {
-            console.log("A processar o item:", item);
             // A sua regra: o cupão só se aplica se o item não tiver original_price
             if (item.original_price === null || item.original_price === undefined) {
                 // Produto elegível encontrado!
@@ -79,11 +76,11 @@ const applyCoupon = async (req, res) => {
                     return res.status(500).json({ message: 'Erro interno ao calcular o desconto.' });
                 }
 
-                // Calcular o desconto com base no preço do item elegível
-                discountApplied = item.price * (discountValue / 100);
+                // Soma o desconto de CADA item elegível ao total
+                discountApplied += item.price * (discountValue / 100);
                 
-                // Parar o loop assim que o primeiro item elegível for encontrado
-                break;
+                // REMOVA ESTA LINHA para que o loop continue a processar
+                // break;
             }
         }
 
@@ -94,7 +91,7 @@ const applyCoupon = async (req, res) => {
              });
         }
         
-        // Recalcular o total do carrinho com o desconto
+        // Recalcular o total do carrinho com o desconto total
         const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         let newTotal = subtotal - discountApplied;
 
