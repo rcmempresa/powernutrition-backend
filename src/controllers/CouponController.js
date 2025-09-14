@@ -56,25 +56,44 @@ const applyCoupon = async (req, res) => {
         if (!coupon) {
             return res.status(404).json({ message: 'O cupão não é válido ou expirou.' });
         }
-
-        // Calcular o subtotal do carrinho
-        const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         
         let discountApplied = 0;
-        
-        // Conversão do valor do desconto de string para número
-        const discountValue = parseFloat(coupon.discount_percentage);
+        let eligibleItemFound = false;
 
-        // Verificar se a conversão foi bem-sucedida e se o valor é válido
-        if (!isNaN(discountValue)) {
-            // Calcular o desconto com base no valor numérico
-            discountApplied = subtotal * (discountValue / 100);
-        } else {
-            console.error('Erro: discount_percentage não é um número válido.');
-            return res.status(500).json({ message: 'Erro interno ao calcular o desconto.' });
+        // Itera sobre todos os itens do carrinho para encontrar o primeiro item elegível
+        for (const item of items) {
+            // A sua regra: o cupão só se aplica se o item não tiver original_price
+            if (item.original_price === null || item.original_price === undefined) {
+                // Produto elegível encontrado!
+                eligibleItemFound = true;
+                
+                // Conversão do valor do desconto de string para número
+                const discountValue = parseFloat(coupon.discount_percentage);
+
+                if (isNaN(discountValue)) {
+                    console.error('Erro: discount_percentage não é um número válido.');
+                    return res.status(500).json({ message: 'Erro interno ao calcular o desconto.' });
+                }
+
+                // Calcular o desconto com base no preço do item elegível
+                discountApplied = item.price * (discountValue / 100);
+                
+                // Parar o loop assim que o primeiro item elegível for encontrado
+                break;
+            }
         }
 
+        // Se nenhum item elegível foi encontrado, o cupão não pode ser aplicado
+        if (!eligibleItemFound) {
+             return res.status(400).json({
+                message: 'Este cupão só se aplica a produtos sem desconto pré-existente.'
+             });
+        }
+        
+        // Recalcular o total do carrinho com o desconto
+        const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         let newTotal = subtotal - discountApplied;
+
         if (newTotal < 0) {
             newTotal = 0;
         }
