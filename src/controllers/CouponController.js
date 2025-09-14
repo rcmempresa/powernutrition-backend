@@ -62,6 +62,7 @@ const applyCoupon = async (req, res) => {
 
         // Itera sobre todos os itens do carrinho para encontrar o primeiro item elegível
         for (const item of items) {
+            console.log("Dados do items:",items);
             // A sua regra: o cupão só se aplica se o item não tiver original_price
             if (item.original_price === null || item.original_price === undefined) {
                 // Produto elegível encontrado!
