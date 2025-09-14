@@ -55,6 +55,7 @@ const getCartItems = async (cartId) => {
         p.name AS product_name,
         p.description AS product_description,
         p.image_url AS product_image,
+        p.original_price, -- <--- Adicione esta linha
         b.name AS brand_name,
         f.name AS flavor_name
      FROM cart_items ci
