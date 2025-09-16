@@ -1,13 +1,20 @@
 const db = require('../config/db');
 
 const CouponModel = {
-  createCoupon: async (couponData) => {
-    const { code, discount_percentage, athlete_name } = couponData;
+ createCoupon: async (couponData) => {
+    const { 
+        code, 
+        discount_percentage, 
+        athlete_name, 
+        is_specific = false, 
+        product_id = null  
+    } = couponData;
+
     const result = await db.query(
-      `INSERT INTO coupons (code, discount_percentage, athlete_name)
-       VALUES ($1, $2, $3)
+      `INSERT INTO coupons (code, discount_percentage, athlete_name, is_specific, product_id)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [code, discount_percentage, athlete_name]
+      [code, discount_percentage, athlete_name, is_specific, product_id]
     );
     return result.rows[0];
   },
@@ -35,13 +42,25 @@ const CouponModel = {
 
   // **NOVA FUNÇÃO: Atualizar Cupão**
   updateCoupon: async (id, couponData) => {
-    const { code, discount_percentage, athlete_name } = couponData;
+    const { 
+        code, 
+        discount_percentage, 
+        athlete_name, 
+        is_specific, 
+        product_id 
+    } = couponData;
+
     const result = await db.query(
       `UPDATE coupons
-       SET code = $1, discount_percentage = $2, athlete_name = $3
-       WHERE id = $4
+       SET 
+         code = $1, 
+         discount_percentage = $2, 
+         athlete_name = $3, 
+         is_specific = $4,
+         product_id = $5
+       WHERE id = $6
        RETURNING *`,
-      [code, discount_percentage, athlete_name, id]
+      [code, discount_percentage, athlete_name, is_specific, product_id, id]
     );
     return result.rows[0];
   },
