@@ -44,64 +44,79 @@ const listCoupons = async (req, res) => {
 };
 
 const applyCoupon = async (req, res) => {
-    const { couponCode, items } = req.body;
-    console.log("Dados recebidos no 'items':", items);
+    // Agora, esperamos uma array de códigos de cupão e os itens do carrinho.
+    const { couponCodes, items } = req.body;
     
-    if (!couponCode) {
-        return res.status(400).json({ message: 'O código do cupão é obrigatório.' });
+    console.log("Dados recebidos no 'items':", items);
+
+    // Verificação inicial: garante que a lista de cupões não está vazia.
+    if (!couponCodes || !Array.isArray(couponCodes) || couponCodes.length === 0) {
+        return res.status(400).json({ message: 'A lista de cupões é obrigatória.' });
     }
 
     try {
-        const coupon = await CouponModel.getCouponByCode(couponCode);
-
-        if (!coupon) {
-            return res.status(404).json({ message: 'O cupão não é válido ou expirou.' });
-        }
-        
-        let discountApplied = 0;
+        let totalDiscount = 0;
         let eligibleItemFound = false;
-        
-        // Itera sobre TODOS os itens do carrinho para encontrar os elegíveis
-        for (const item of items) {
-            // A sua regra: o cupão só se aplica se o item não tiver original_price
-            if (item.original_price === null || item.original_price === undefined) {
-                // Produto elegível encontrado!
-                eligibleItemFound = true;
-                
-                // Conversão do valor do desconto de string para número
-                const discountValue = parseFloat(coupon.discount_percentage);
 
-                if (isNaN(discountValue)) {
-                    console.error('Erro: discount_percentage não é um número válido.');
-                    return res.status(500).json({ message: 'Erro interno ao calcular o desconto.' });
+        // Itera sobre CADA código de cupão enviado pelo frontend.
+        for (const couponCode of couponCodes) {
+            const coupon = await CouponModel.getCouponByCode(couponCode);
+
+            if (!coupon) {
+                // Se um cupão for inválido, podemos abortar e enviar um erro.
+                return res.status(404).json({ message: `O cupão "${couponCode}" não é válido ou expirou.` });
+            }
+
+            const discountValue = parseFloat(coupon.discount_percentage);
+
+            // Determina quais itens do carrinho são elegíveis para este cupão.
+            const eligibleItems = items.filter(item => {
+                // Lógica para cupões gerais (ex: 10%)
+                if (!coupon.is_specific) {
+                    // O cupão geral aplica-se apenas a produtos que não têm um preço original (sem desconto pré-existente)
+                    return item.original_price === null || item.original_price === undefined;
+                } 
+                // Lógica para cupões específicos (ex: 25%)
+                else {
+                    // O cupão específico aplica-se apenas ao produto com o ID associado
+                    return item.product_id === coupon.product_id;
                 }
+            });
 
-                // Soma o desconto de CADA item elegível ao total
-                discountApplied += item.price * (discountValue / 100);
+            // Se o cupão se aplica a algum item, calculamos o desconto.
+            if (eligibleItems.length > 0) {
+                // Aplica o desconto para este cupão nos itens elegíveis.
+                const currentCouponDiscount = eligibleItems.reduce((sum, item) => {
+                    // Usa o preço atual para calcular o desconto.
+                    return sum + (item.price * (discountValue / 100));
+                }, 0);
+
+                // Soma o desconto deste cupão ao total acumulado.
+                totalDiscount += currentCouponDiscount;
                 
-                // REMOVA ESTA LINHA para que o loop continue a processar
-                // break;
+                // Marca que pelo menos um item elegível foi encontrado.
+                eligibleItemFound = true;
             }
         }
 
-        // Se nenhum item elegível foi encontrado, o cupão não pode ser aplicado
+        // Se nenhum item foi elegível após verificar todos os cupões, envia um erro.
         if (!eligibleItemFound) {
-             return res.status(400).json({
-                message: 'Este cupão só se aplica a produtos sem desconto pré-existente.'
-             });
+            return res.status(400).json({
+                message: 'Nenhum cupão se aplica a um produto elegível no seu carrinho.'
+            });
         }
-        
-        // Recalcular o total do carrinho com o desconto total
+
+        // Recalcula o total final com base no subtotal e no total de descontos.
         const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        let newTotal = subtotal - discountApplied;
+        let newTotal = subtotal - totalDiscount;
 
         if (newTotal < 0) {
             newTotal = 0;
         }
 
         res.status(200).json({
-            message: 'Cupão aplicado com sucesso!',
-            discount: discountApplied,
+            message: 'Cupões aplicados com sucesso!',
+            discount: totalDiscount,
             newTotal: newTotal
         });
 
