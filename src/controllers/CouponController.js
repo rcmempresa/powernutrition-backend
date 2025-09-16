@@ -87,8 +87,12 @@ const applyCoupon = async (req, res) => {
             if (eligibleItems.length > 0) {
                 // Aplica o desconto para este cupão nos itens elegíveis.
                 const currentCouponDiscount = eligibleItems.reduce((sum, item) => {
-                    // Usa o preço atual para calcular o desconto.
-                    return sum + (item.price * (discountValue / 100));
+                    // A nova lógica: usa o original_price para cupões específicos, caso contrário usa o price
+                    const priceForDiscount = (coupon.is_specific && item.original_price != null)
+                        ? item.original_price
+                        : item.price;
+                        
+                    return sum + (priceForDiscount * item.quantity * (discountValue / 100));
                 }, 0);
 
                 // Soma o desconto deste cupão ao total acumulado.
