@@ -14,7 +14,7 @@ const CouponModel = {
 
   getCouponByCode: async (code) => {
     const result = await db.query(
-      'SELECT * FROM coupons WHERE code = $1 AND is_active = true',
+      `SELECT *, is_specific, product_id FROM coupons WHERE code = $1 AND is_active = true`,
       [code]
     );
     return result.rows[0];
