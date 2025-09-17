@@ -46,13 +46,8 @@ const listCoupons = async (req, res) => {
 const applyCoupon = async (req, res) => {
     const { couponCodes, items } = req.body;
     
-    // Log 1: Verifica o payload inicial recebido do frontend
-    console.log('--- Início da execução da função applyCoupon ---');
-    console.log('Payload recebido:', { couponCodes, items });
-
     // Verificação inicial
     if (!couponCodes || !Array.isArray(couponCodes) || couponCodes.length === 0) {
-        console.log('Erro: Lista de cupões vazia.');
         return res.status(400).json({ message: 'A lista de cupões é obrigatória.' });
     }
 
@@ -64,16 +59,11 @@ const applyCoupon = async (req, res) => {
         const discountedItemIds = new Set(); 
 
         for (const couponCode of couponCodes) {
-            console.log(`\n--- Processando cupão: "${couponCode}" ---`);
             const coupon = await CouponModel.getCouponByCode(couponCode);
 
             if (!coupon) {
-                console.log(`Erro: Cupão "${couponCode}" não é válido ou expirou.`);
                 return res.status(404).json({ message: `O cupão "${couponCode}" não é válido ou expirou.` });
             }
-
-            // Log 2: Verifica os dados do cupão do banco de dados
-            console.log('Dados do cupão:', coupon);
 
             const discountValue = parseFloat(coupon.discount_percentage);
 
@@ -90,18 +80,13 @@ const applyCoupon = async (req, res) => {
                 }
             });
 
-            // Log 3: Mostra quais itens são elegíveis para este cupão
-            console.log('Itens elegíveis para este cupão:', eligibleItemsForCoupon.map(item => item.product_name));
-
             if (eligibleItemsForCoupon.length > 0) {
                 const currentCouponDiscount = eligibleItemsForCoupon.reduce((sum, item) => {
                     const priceForDiscount = (item.original_price !== null && item.original_price !== undefined)
-                        ? item.original_price
+                        ? parseFloat(item.original_price) // Use o original_price para o cálculo
                         : item.price;
-                    
-                    // Log 4: Mostra o cálculo do desconto para cada item
-                    console.log(`  - Calculando desconto para ${item.product_name}: (${priceForDiscount} * ${item.quantity}) * (${discountValue} / 100)`);
-                    
+                        
+                    // Marca o item como descontado, usando o ID único
                     discountedItemIds.add(item.id);
 
                     return sum + (priceForDiscount * item.quantity * (discountValue / 100));
@@ -109,34 +94,28 @@ const applyCoupon = async (req, res) => {
 
                 totalDiscount += currentCouponDiscount;
                 eligibleItemFound = true;
-                
-                // Log 5: Mostra o desconto acumulado para o cupão atual
-                console.log(`Desconto total deste cupão: ${currentCouponDiscount.toFixed(2)}`);
-            } else {
-                console.log('Nenhum item elegível encontrado para este cupão.');
             }
         }
 
         if (!eligibleItemFound) {
-            console.log('Erro: Nenhum cupão se aplica a um produto elegível.');
             return res.status(400).json({
                 message: 'Nenhum cupão se aplica a um produto elegível no seu carrinho.'
             });
         }
-        
-        const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        let newTotal = subtotal - totalDiscount;
+
+        // ✅ CORREÇÃO CRÍTICA: Recalcula o subtotal usando o original_price para garantir a matemática correta
+        const subtotalBeforeDiscount = items.reduce((sum, item) => {
+            const priceToUse = (item.original_price !== null && item.original_price !== undefined)
+                ? parseFloat(item.original_price)
+                : item.price;
+            return sum + (priceToUse * item.quantity);
+        }, 0);
+
+        let newTotal = subtotalBeforeDiscount - totalDiscount;
 
         if (newTotal < 0) {
             newTotal = 0;
         }
-
-        // Log 6: Mostra os valores finais antes de enviar a resposta
-        console.log('\n--- Resultado Final ---');
-        console.log(`Subtotal (calculado com item.price): ${subtotal.toFixed(2)}`);
-        console.log(`Desconto Total Acumulado: ${totalDiscount.toFixed(2)}`);
-        console.log(`Novo Total da Encomenda: ${newTotal.toFixed(2)}`);
-        console.log('--- Fim da execução ---');
 
         res.status(200).json({
             message: 'Cupões aplicados com sucesso!',
@@ -145,8 +124,7 @@ const applyCoupon = async (req, res) => {
         });
 
     } catch (err) {
-        // Log 7: Captura e exibe o erro completo
-        console.error('Erro geral ao aplicar o cupão:', err);
+        console.error('Erro ao aplicar o cupão:', err);
         res.status(500).json({ message: 'Erro interno do servidor.' });
     }
 };
