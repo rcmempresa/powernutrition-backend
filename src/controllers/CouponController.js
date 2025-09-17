@@ -55,9 +55,8 @@ const applyCoupon = async (req, res) => {
         let totalDiscount = 0;
         let eligibleItemFound = false;
 
-        // Cria uma cópia dos itens para rastrear quais já receberam desconto.
-        // Isso evita que um mesmo item receba mais de um desconto.
-        const discountedItems = new Set(); 
+        // Rastrea os itens que já foram descontados para evitar descontos duplos
+        const discountedItemIds = new Set(); 
 
         for (const couponCode of couponCodes) {
             const coupon = await CouponModel.getCouponByCode(couponCode);
@@ -70,14 +69,14 @@ const applyCoupon = async (req, res) => {
 
             const eligibleItemsForCoupon = items.filter(item => {
                 // Se o item já foi descontado por um cupão anterior, ignora.
-                if (discountedItems.has(item.id)) {
+                if (discountedItemIds.has(item.id)) {
                     return false;
                 }
 
                 // Lógica para cupões gerais
                 if (!coupon.is_specific) {
-                    // Aplica-se apenas a produtos que não têm um preço original (sem desconto pré-existente)
-                    return item.original_price === null;
+                    // Aplica-se apenas a produtos que não têm um preço original
+                    return item.original_price === null || item.original_price === undefined;
                 } 
                 // Lógica para cupões específicos
                 else {
@@ -88,11 +87,13 @@ const applyCoupon = async (req, res) => {
 
             if (eligibleItemsForCoupon.length > 0) {
                 const currentCouponDiscount = eligibleItemsForCoupon.reduce((sum, item) => {
-                    // O desconto é sempre aplicado sobre o preço atual do item no carrinho
-                    const priceForDiscount = item.price;
-                    
-                    // Marca o item como descontado
-                    discountedItems.add(item.id);
+                    // ✨ CORREÇÃO CRÍTICA: O desconto é calculado sobre o original_price, se ele existir ✨
+                    const priceForDiscount = (item.original_price !== null && item.original_price !== undefined)
+                        ? item.original_price
+                        : item.price;
+                        
+                    // Marca o item como descontado, usando o ID único
+                    discountedItemIds.add(item.id);
 
                     return sum + (priceForDiscount * item.quantity * (discountValue / 100));
                 }, 0);
@@ -108,7 +109,7 @@ const applyCoupon = async (req, res) => {
             });
         }
 
-        // Recalcula o total final
+        // Recalcula o total final com base no subtotal e no total de descontos
         const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         let newTotal = subtotal - totalDiscount;
 
