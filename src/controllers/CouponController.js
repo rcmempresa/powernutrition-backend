@@ -44,12 +44,9 @@ const listCoupons = async (req, res) => {
 };
 
 const applyCoupon = async (req, res) => {
-    // Agora, esperamos uma array de códigos de cupão e os itens do carrinho.
     const { couponCodes, items } = req.body;
     
-    console.log("Dados recebidos no 'items':", items);
-
-    // Verificação inicial: garante que a lista de cupões não está vazia.
+    // Verificação inicial
     if (!couponCodes || !Array.isArray(couponCodes) || couponCodes.length === 0) {
         return res.status(400).json({ message: 'A lista de cupões é obrigatória.' });
     }
@@ -58,59 +55,60 @@ const applyCoupon = async (req, res) => {
         let totalDiscount = 0;
         let eligibleItemFound = false;
 
-        // Itera sobre CADA código de cupão enviado pelo frontend.
+        // Cria uma cópia dos itens para rastrear quais já receberam desconto.
+        // Isso evita que um mesmo item receba mais de um desconto.
+        const discountedItems = new Set(); 
+
         for (const couponCode of couponCodes) {
             const coupon = await CouponModel.getCouponByCode(couponCode);
 
             if (!coupon) {
-                // Se um cupão for inválido, podemos abortar e enviar um erro.
                 return res.status(404).json({ message: `O cupão "${couponCode}" não é válido ou expirou.` });
             }
 
             const discountValue = parseFloat(coupon.discount_percentage);
 
-            // Determina quais itens do carrinho são elegíveis para este cupão.
-            const eligibleItems = items.filter(item => {
-                // Lógica para cupões gerais (ex: 10%)
+            const eligibleItemsForCoupon = items.filter(item => {
+                // Se o item já foi descontado por um cupão anterior, ignora.
+                if (discountedItems.has(item.id)) {
+                    return false;
+                }
+
+                // Lógica para cupões gerais
                 if (!coupon.is_specific) {
-                    // O cupão geral aplica-se apenas a produtos que não têm um preço original (sem desconto pré-existente)
-                    return item.original_price === null || item.original_price === undefined;
+                    // Aplica-se apenas a produtos que não têm um preço original (sem desconto pré-existente)
+                    return item.original_price === null;
                 } 
-                // Lógica para cupões específicos (ex: 25%)
+                // Lógica para cupões específicos
                 else {
-                    // O cupão específico aplica-se apenas ao produto com o ID associado
+                    // Aplica-se apenas ao produto com o ID associado
                     return item.product_id === coupon.product_id;
                 }
             });
 
-            // Se o cupão se aplica a algum item, calculamos o desconto.
-            if (eligibleItems.length > 0) {
-                // Aplica o desconto para este cupão nos itens elegíveis.
-                const currentCouponDiscount = eligibleItems.reduce((sum, item) => {
-                    // A nova lógica: usa o original_price para cupões específicos, caso contrário usa o price
-                    const priceForDiscount = (coupon.is_specific && item.original_price != null)
-                        ? item.original_price
-                        : item.price;
-                        
+            if (eligibleItemsForCoupon.length > 0) {
+                const currentCouponDiscount = eligibleItemsForCoupon.reduce((sum, item) => {
+                    // O desconto é sempre aplicado sobre o preço atual do item no carrinho
+                    const priceForDiscount = item.price;
+                    
+                    // Marca o item como descontado
+                    discountedItems.add(item.id);
+
                     return sum + (priceForDiscount * item.quantity * (discountValue / 100));
                 }, 0);
 
-                // Soma o desconto deste cupão ao total acumulado.
                 totalDiscount += currentCouponDiscount;
-                
-                // Marca que pelo menos um item elegível foi encontrado.
                 eligibleItemFound = true;
             }
         }
 
-        // Se nenhum item foi elegível após verificar todos os cupões, envia um erro.
         if (!eligibleItemFound) {
             return res.status(400).json({
                 message: 'Nenhum cupão se aplica a um produto elegível no seu carrinho.'
             });
         }
 
-        // Recalcula o total final com base no subtotal e no total de descontos.
+        // Recalcula o total final
         const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         let newTotal = subtotal - totalDiscount;
 
