@@ -117,8 +117,8 @@ router.get('/active', async (req, res) => {
             'sku', v.sku,
             'weight_value', v.weight_value,
             'weight_unit', v.weight_unit,
-            'flavor_id', v.flavor_id,
-            'flavor_name', f.name,
+            'flavor_id', v.sabor_id,
+'flavor_name', f.name
             'image_url', v.image_url
           )) AS variants
         FROM products p
