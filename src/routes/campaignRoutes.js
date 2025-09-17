@@ -99,27 +99,13 @@ router.get('/active', async (req, res) => {
     const campaigns = [];
     for (const campaign of campaignsResult.rows) {
       const productsQuery = `
-        SELECT p.*,
-               array_agg(jsonb_build_object(
-                 'id', v.id,
-                 'preco', v.preco,
-                 'quantidade_em_stock', v.quantidade_em_stock,
-                 'sku', v.sku,
-                 'weight_value', v.weight_value,
-                 'weight_unit', v.weight_unit,
-                 'flavor_id', v.flavor_id,
-                 'flavor_name', f.name,
-                 'image_url', v.image_url
-               )) as variants
+        SELECT p.*
         FROM products p
         INNER JOIN product_campaign pc ON p.id = pc.product_id
-        INNER JOIN product_variants v ON p.id = v.product_id
-        LEFT JOIN flavors f ON v.flavor_id = f.id
-        WHERE pc.campaign_id = $1
-        GROUP BY p.id;
+        WHERE pc.campaign_id = $1;
       `;
       const productsResult = await pool.query(productsQuery, [campaign.id]);
-      
+
       campaigns.push({
         ...campaign,
         products: productsResult.rows
