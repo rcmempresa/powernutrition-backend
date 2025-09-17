@@ -28,7 +28,7 @@ const reviewsRouter = require('./routes/reviews');
 const favoriteRoutes = require('./routes/favoriteRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 const brandsRoutes = require('./routes/brandRoutes');
-const campaignRoutes = require('./routes/CampaignRoutes');
+const campaignRoutes = require('./routes/campaignRoutes');
 
 require('dotenv').config();
 
