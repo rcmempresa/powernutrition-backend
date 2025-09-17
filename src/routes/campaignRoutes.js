@@ -119,7 +119,7 @@ router.get('/active', async (req, res) => {
     'weight_unit', v.weight_unit,
     'flavor_id', v.sabor_id,
     'flavor_name', f.name,
-    'image_url', v.image_url
+    'image_url', p.image_url
   )) AS variants
 FROM products p
 INNER JOIN product_campaign pc ON p.id = pc.product_id
