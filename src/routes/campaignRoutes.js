@@ -124,7 +124,7 @@ router.get('/active', async (req, res) => {
         FROM products p
         INNER JOIN product_campaign pc ON p.id = pc.product_id
         -- A tabela de variantes tem o nome 'variantes'
-        INNER JOIN variantes v ON p.id = v.product_id
+        INNER JOIN variantes v ON p.id = v.produto_id
         LEFT JOIN flavors f ON v.flavor_id = f.id
         WHERE pc.campaign_id = $1
         GROUP BY p.id;
