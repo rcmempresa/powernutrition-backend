@@ -88,7 +88,6 @@ router.delete('/:campaignId/remover-produto/:productId', async (req, res) => {
 // Rota para obter campanhas ativas (para o frontend)
 router.get('/active', async (req, res) => {
   try {
-    // 1. Obter todas as campanhas ativas
     const campaignsQuery = `
       SELECT id, name
       FROM campaigns
@@ -98,7 +97,6 @@ router.get('/active', async (req, res) => {
     const campaignsResult = await pool.query(campaignsQuery);
 
     const campaigns = [];
-    // 2. Para cada campanha, buscar todos os produtos completos
     for (const campaign of campaignsResult.rows) {
       const productsQuery = `
         SELECT
@@ -112,7 +110,6 @@ router.get('/active', async (req, res) => {
           p.original_price,
           p.rating,
           p.reviewcount,
-          -- Adiciona a lógica para retornar as variantes num array
           json_agg(jsonb_build_object(
             'id', v.id,
             'preco', v.preco,
@@ -125,14 +122,12 @@ router.get('/active', async (req, res) => {
             'image_url', v.image_url
           )) AS variants
         FROM products p
-        -- Junta a tabela de ligação para encontrar produtos da campanha
         INNER JOIN product_campaign pc ON p.id = pc.product_id
-        -- Junta à tabela de variantes para obter os detalhes de cada variante
-        INNER JOIN product_variants v ON p.id = v.product_id
-        -- Junta à tabela de sabores para obter o nome do sabor, se existir
+        -- A tabela de variantes tem o nome 'variantes'
+        INNER JOIN variantes v ON p.id = v.product_id
         LEFT JOIN flavors f ON v.flavor_id = f.id
         WHERE pc.campaign_id = $1
-        GROUP BY p.id
+        GROUP BY p.id;
       `;
       const productsResult = await pool.query(productsQuery, [campaign.id]);
 
