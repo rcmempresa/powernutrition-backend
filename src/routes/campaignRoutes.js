@@ -100,34 +100,33 @@ router.get('/active', async (req, res) => {
     for (const campaign of campaignsResult.rows) {
       const productsQuery = `
         SELECT
-          p.id,
-          p.name,
-          p.description,
-          p.image_url,
-          p.category_id,
-          p.brand_name,
-          p.is_active,
-          p.original_price,
-          p.rating,
-          p.reviewcount,
-          json_agg(jsonb_build_object(
-            'id', v.id,
-            'preco', v.preco,
-            'quantidade_em_stock', v.quantidade_em_stock,
-            'sku', v.sku,
-            'weight_value', v.weight_value,
-            'weight_unit', v.weight_unit,
-            'flavor_id', v.sabor_id,
-'flavor_name', f.name
-            'image_url', v.image_url
-          )) AS variants
-        FROM products p
-        INNER JOIN product_campaign pc ON p.id = pc.product_id
-        -- A tabela de variantes tem o nome 'variantes'
-        INNER JOIN variantes v ON p.id = v.produto_id
-        LEFT JOIN flavors f ON v.flavor_id = f.id
-        WHERE pc.campaign_id = $1
-        GROUP BY p.id;
+  p.id,
+  p.name,
+  p.description,
+  p.image_url,
+  p.category_id,
+  p.brand_name,
+  p.is_active,
+  p.original_price,
+  p.rating,
+  p.reviewcount,
+  json_agg(jsonb_build_object(
+    'id', v.id,
+    'preco', v.preco,
+    'quantidade_em_stock', v.quantidade_em_stock,
+    'sku', v.sku,
+    'weight_value', v.weight_value,
+    'weight_unit', v.weight_unit,
+    'flavor_id', v.sabor_id,
+    'flavor_name', f.name,
+    'image_url', v.image_url
+  )) AS variants
+FROM products p
+INNER JOIN product_campaign pc ON p.id = pc.product_id
+INNER JOIN variantes v ON p.id = v.produto_id
+LEFT JOIN flavors f ON v.sabor_id = f.id  -- ✨ Corrigindo a chave de JOIN para sabores ✨
+WHERE pc.campaign_id = $1
+GROUP BY p.id
       `;
       const productsResult = await pool.query(productsQuery, [campaign.id]);
 
