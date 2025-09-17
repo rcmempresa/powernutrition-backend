@@ -85,6 +85,29 @@ router.delete('/:campaignId/remover-produto/:productId', async (req, res) => {
   }
 });
 
+router.delete('/:campaignId', async (req, res) => {
+  const { campaignId } = req.params;
+
+  try {
+    // 1. Apagar todas as ligações de produtos na tabela product_campaign
+    await pool.query(
+      "DELETE FROM product_campaign WHERE campaign_id = $1",
+      [campaignId]
+    );
+
+    // 2. Apagar a própria campanha
+    await pool.query(
+      "DELETE FROM campaigns WHERE id = $1",
+      [campaignId]
+    );
+
+    res.status(200).json({ message: 'Campanha e todas as suas ligações de produtos foram eliminadas com sucesso.' });
+  } catch (err) {
+    console.error('Erro ao eliminar a campanha:', err);
+    res.status(500).json({ message: 'Erro interno do servidor.' });
+  }
+});
+
 // Rota para obter campanhas ativas (para o frontend)
 router.get('/active', async (req, res) => {
   try {
