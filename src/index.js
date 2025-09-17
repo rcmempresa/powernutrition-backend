@@ -28,6 +28,7 @@ const reviewsRouter = require('./routes/reviews');
 const favoriteRoutes = require('./routes/favoriteRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 const brandsRoutes = require('./routes/brandRoutes');
+const campaignRoutes = require('./routes/CampaignRoutes');
 
 require('dotenv').config();
 
@@ -98,6 +99,8 @@ app.use('/api/favorites', favoriteRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/brands', brandsRoutes);
+app.use('/api/campaigns', campaignRoutes);
+ 
 
 // Iniciar servidor
 const PORT = process.env.PORT || 3000;
