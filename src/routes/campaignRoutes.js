@@ -99,13 +99,13 @@ router.get('/active', async (req, res) => {
     const campaigns = [];
     for (const campaign of campaignsResult.rows) {
       const productsQuery = `
-        SELECT
+       SELECT
   p.id,
   p.name,
   p.description,
   p.image_url,
   p.category_id,
-  p.brand_name,
+  -- p.brand_name,  <-- REMOVER ESTA LINHA
   p.is_active,
   p.original_price,
   p.rating,
@@ -124,7 +124,7 @@ router.get('/active', async (req, res) => {
 FROM products p
 INNER JOIN product_campaign pc ON p.id = pc.product_id
 INNER JOIN variantes v ON p.id = v.produto_id
-LEFT JOIN flavors f ON v.sabor_id = f.id  -- ✨ Corrigindo a chave de JOIN para sabores ✨
+LEFT JOIN flavors f ON v.sabor_id = f.id
 WHERE pc.campaign_id = $1
 GROUP BY p.id
       `;
