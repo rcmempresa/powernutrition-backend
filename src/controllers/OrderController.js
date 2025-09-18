@@ -9,7 +9,8 @@ const db = require('../config/db');
 const checkout = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { addressId, couponCode, email, paymentMethod, paymentDetails } = req.body;
+    // CORRIGIDO: Agora recebe couponCodes (plural)
+    const { addressId, couponCodes, email, paymentMethod, paymentDetails } = req.body;
 
     const user = await userModel.getUserById(userId);
     if (!user) return res.status(404).json({ message: 'Utilizador não encontrado.' });
@@ -33,15 +34,37 @@ const checkout = async (req, res) => {
     }
 
     let totalPrice = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    let discount = 0;
-    if (couponCode) {
-      const coupon = await couponModel.getCouponByCode(couponCode);
-      if (coupon && coupon.is_active) {
-        discount = coupon.discount_percentage ? totalPrice * (coupon.discount_percentage / 100) : coupon.discount_amount;
-        totalPrice -= discount;
-        if (totalPrice < 0) totalPrice = 0;
-      } else {
-        return res.status(400).json({ message: 'Cupão inválido ou inativo' });
+    let totalDiscount = 0;
+    
+    // CORRIGIDO: Itera sobre a lista de cupões
+    if (couponCodes && couponCodes.length > 0) {
+      for (const code of couponCodes) {
+        const coupon = await couponModel.getCouponByCode(code);
+        if (coupon && coupon.is_active) {
+          const itemToApply = cartItems.find(item => item.product_id === coupon.product_id);
+          
+          if (itemToApply) {
+            let discountAmount = 0;
+            if (coupon.discount_percentage) {
+              // Aplica o desconto ao preço do item, não ao total
+              discountAmount = itemToApply.price * (coupon.discount_percentage / 100);
+            } else if (coupon.discount_amount) {
+              discountAmount = coupon.discount_amount;
+            }
+            
+            // Subtrai o desconto do preço total
+            totalPrice -= discountAmount * itemToApply.quantity;
+            totalDiscount += discountAmount * itemToApply.quantity;
+
+            if (totalPrice < 0) totalPrice = 0;
+
+          } else {
+            // Se o cupão for específico para um produto, mas esse produto não estiver no carrinho
+            return res.status(400).json({ message: `Cupão '${code}' não se aplica a nenhum item no seu carrinho.` });
+          }
+        } else {
+          return res.status(400).json({ message: `Cupão '${code}' inválido ou inativo` });
+        }
       }
     }
     
@@ -54,22 +77,20 @@ const checkout = async (req, res) => {
       addressId,
       totalPrice,
       'pendente',
-      couponCode || null,
+      couponCodes.join(',') || null, // Armazena a lista de cupões
       paymentMethod,
       easypayId
     );
 
-   const productsForEmail = [];
+    const productsForEmail = [];
     for (const item of cartItems) {
       await orderModel.addOrderItem(order.id, item.variant_id, item.quantity, item.price);
 
-      // NOTA: É necessário buscar os dados da variante, não do produto genérico
-      // Para obter o nome e sabor no e-mail, deve usar o item que já tem as informações
       productsForEmail.push({
-        name: item.product_name, // Nome já vem da query getCartItems
-        flavor: item.flavor_name, // Sabor já vem da query getCartItems
+        name: item.product_name,
+        flavor: item.flavor_name,
         quantity: item.quantity,
-        price: item.price // Preço já vem da query
+        price: item.price
       });
     }
 
@@ -91,7 +112,7 @@ const checkout = async (req, res) => {
     } else if (paymentMethod === 'cc') {
       paymentDetailsHtml = `<p>O seu pagamento com Cartão de Crédito foi processado com sucesso.</p>`;
     } else if (paymentMethod === 'cod') {
-        paymentDetailsHtml = `<p>A sua encomenda será paga à cobrança no momento da entrega.</p>`;
+      paymentDetailsHtml = `<p>A sua encomenda será paga à cobrança no momento da entrega.</p>`;
     }
 
     // Preparar e enviar o e-mail de confirmação para o cliente
@@ -112,7 +133,7 @@ const checkout = async (req, res) => {
         <div style="max-width: 600px; margin: 0 auto; background-color: #374151; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
           
           <div style="background-color: #f97316; padding: 20px; text-align: center;">
-            <img src="https://wwww.rdpowernutrition.pt/rd_power.png" alt="RD Power Logo" style="width: 150px; height: auto;">
+            <img src="https://www.rdpowernutrition.pt/rd_power.png" alt="RD Power Logo" style="width: 150px; height: auto;">
             <h1 style="color: #ffffff; font-size: 24px; margin-top: 15px; margin-bottom: 0;">Encomenda Confirmada!</h1>
           </div>
           <div style="padding: 20px;">
@@ -136,7 +157,7 @@ const checkout = async (req, res) => {
             </table>
             <div style="background-color: #4b5563; padding: 15px; border-radius: 8px; margin-top: 20px;">
               <table width="100%" cellpadding="0" cellspacing="0" style="width: 100%;">
-                <tr><td style="text-align: left; padding: 5px 0;">Subtotal:</td><td style="text-align: right; padding: 5px 0;">€${(totalPrice + discount).toFixed(2)}</td></tr>
+                <tr><td style="text-align: left; padding: 5px 0;">Subtotal:</td><td style="text-align: right; padding: 5px 0;">€${(totalPrice + totalDiscount).toFixed(2)}</td></tr>
                 <tr><td style="text-align: left; padding: 5px 0;">Portes de Envio:</td><td style="text-align: right; padding: 5px 0;">€0.00</td></tr>
                 <tr style="border-top: 1px solid #6b7280;"><td style="text-align: left; padding: 10px 0; font-weight: bold; color: #f97316;">Total:</td><td style="text-align: right; padding: 10px 0; font-weight: bold; color: #f97316;">€${totalPrice.toFixed(2)}</td></tr>
               </table>
@@ -174,7 +195,6 @@ const checkout = async (req, res) => {
     } else if (paymentMethod === 'cod') {
         ownerPaymentDetailsHtml = `<p>O cliente optou por pagamento à cobrança.</p>`;
     }
-
 
     // Envio de e-mail de notificação para o dono da loja
     const shopOwnerEmail = process.env.SHOP_OWNER_EMAIL;
@@ -247,7 +267,7 @@ const checkout = async (req, res) => {
     res.status(201).json({
       message: 'Encomenda realizada com sucesso',
       orderId: order.id,
-      discountApplied: discount
+      discountApplied: totalDiscount // Retorna o desconto total aplicado
     });
 
   } catch (err) {
