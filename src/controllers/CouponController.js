@@ -68,22 +68,28 @@ const applyCoupon = async (req, res) => {
             const discountValue = parseFloat(coupon.discount_percentage);
 
             const eligibleItemsForCoupon = items.filter(item => {
+                // Se o item já foi descontado por um cupão anterior, ignora.
                 if (discountedItemIds.has(item.id)) {
                     return false;
                 }
 
+                // Lógica para cupões gerais
                 if (!coupon.is_specific) {
-                    return item.original_price === null || item.original_price === undefined;
+                    // Aplica-se a todos os produtos que ainda não foram descontados por um cupão.
+                    return true;
                 } 
+                // Lógica para cupões específicos
                 else {
+                    // Aplica-se apenas ao produto com o ID associado
                     return item.product_id === coupon.product_id;
                 }
             });
 
             if (eligibleItemsForCoupon.length > 0) {
                 const currentCouponDiscount = eligibleItemsForCoupon.reduce((sum, item) => {
+                    // Usa o original_price para cálculo de desconto se existir, caso contrário usa o price
                     const priceForDiscount = (item.original_price !== null && item.original_price !== undefined)
-                        ? parseFloat(item.original_price) // Use o original_price para o cálculo
+                        ? parseFloat(item.original_price)
                         : item.price;
                         
                     // Marca o item como descontado, usando o ID único
@@ -103,7 +109,7 @@ const applyCoupon = async (req, res) => {
             });
         }
 
-        // ✅ CORREÇÃO CRÍTICA: Recalcula o subtotal usando o original_price para garantir a matemática correta
+        // Recalcula o subtotal usando o preço de base para garantir a matemática correta
         const subtotalBeforeDiscount = items.reduce((sum, item) => {
             const priceToUse = (item.original_price !== null && item.original_price !== undefined)
                 ? parseFloat(item.original_price)
