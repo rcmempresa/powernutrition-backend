@@ -70,7 +70,7 @@ const applyCoupon = async (req, res) => {
                 }
 
                 if (!coupon.is_specific) {
-                    // ✅ CORREÇÃO FINAL: O cupão geral só se aplica a itens sem original_price
+                    // O cupão geral só se aplica a itens sem original_price.
                     return item.original_price === null || item.original_price === undefined;
                 } 
                 else {
