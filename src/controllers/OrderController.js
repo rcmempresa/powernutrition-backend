@@ -9,23 +9,28 @@ const db = require('../config/db');
 const checkout = async (req, res) => {
   try {
     const userId = req.user.id;
-    // CORRIGIDO: Agora recebe couponCodes (plural)
     const { addressId, couponCodes, email, paymentMethod, paymentDetails } = req.body;
 
     const user = await userModel.getUserById(userId);
-    if (!user) return res.status(404).json({ message: 'Utilizador não encontrado.' });
+    if (!user) {
+      return res.status(404).json({ message: 'Utilizador não encontrado.' });
+    }
     if (user.email !== email) {
       console.warn(`[AVISO DE SEGURANÇA] Utilizador autenticado (${user.email}) solicitou a confirmação de encomenda para um e-mail diferente: ${email}`);
     }
 
     const cart = await cartModel.getOrCreateCart(userId);
     const cartItems = await cartModel.getCartItems(cart.id);
-    if (!cartItems.length) return res.status(400).json({ message: 'Carrinho está vazio' });
+    if (!cartItems.length) {
+      return res.status(400).json({ message: 'Carrinho está vazio' });
+    }
 
     // Verificar stock de cada produto
     for (const item of cartItems) {
       const product = await productModel.findProductById(item.product_id);
-      if (!product) return res.status(404).json({ message: `Produto com ID ${item.product_id} não encontrado` });
+      if (!product) {
+        return res.status(404).json({ message: `Produto com ID ${item.product_id} não encontrado` });
+      }
       if (product.stock_quantity < item.quantity) {
         return res.status(400).json({
           message: `Stock insuficiente para o produto "${product.name}". Disponível: ${product.stock_quantity}`
@@ -36,48 +41,64 @@ const checkout = async (req, res) => {
     let totalPrice = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     let totalDiscount = 0;
     
-    // CORRIGIDO: Itera sobre a lista de cupões
+    // --- LÓGICA CORRIGIDA PARA APLICAÇÃO DE CUPÕES ---
     if (couponCodes && couponCodes.length > 0) {
       for (const code of couponCodes) {
         const coupon = await couponModel.getCouponByCode(code);
-        if (coupon && coupon.is_active) {
+        
+        if (!coupon || !coupon.is_active) {
+            return res.status(400).json({ message: `Cupão '${code}' inválido ou inativo` });
+        }
+
+        if (coupon.product_id) { // Cupão para um produto específico
           const itemToApply = cartItems.find(item => item.product_id === coupon.product_id);
           
           if (itemToApply) {
             let discountAmount = 0;
             if (coupon.discount_percentage) {
-              // Aplica o desconto ao preço do item, não ao total
               discountAmount = itemToApply.price * (coupon.discount_percentage / 100);
             } else if (coupon.discount_amount) {
               discountAmount = coupon.discount_amount;
             }
             
-            // Subtrai o desconto do preço total
             totalPrice -= discountAmount * itemToApply.quantity;
             totalDiscount += discountAmount * itemToApply.quantity;
-
-            if (totalPrice < 0) totalPrice = 0;
-
           } else {
-            // Se o cupão for específico para um produto, mas esse produto não estiver no carrinho
             return res.status(400).json({ message: `Cupão '${code}' não se aplica a nenhum item no seu carrinho.` });
           }
-        } else {
-          return res.status(400).json({ message: `Cupão '${code}' inválido ou inativo` });
+        } else { // Cupão genérico
+            const eligibleItems = cartItems.filter(item => item.original_price === null);
+            
+            if (eligibleItems.length > 0) {
+              const subtotalEligible = eligibleItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+              
+              let discountAmount = 0;
+              if (coupon.discount_percentage) {
+                discountAmount = subtotalEligible * (coupon.discount_percentage / 100);
+              } else if (coupon.discount_amount) {
+                discountAmount = coupon.discount_amount;
+              }
+              
+              totalPrice -= discountAmount;
+              totalDiscount += discountAmount;
+            } else {
+              return res.status(400).json({ message: `Cupão '${code}' genérico não se aplica, pois não há produtos elegíveis no carrinho.` });
+            }
         }
       }
     }
     
-    // Obter o easypayId apenas se paymentDetails existir
+    if (totalPrice < 0) totalPrice = 0;
+    // --- FIM DA LÓGICA DE CUPÕES ---
+
     const easypayId = paymentDetails ? paymentDetails.payment_id : null;
 
-    // Criar encomenda com os dados de pagamento
     const order = await orderModel.createOrder(
       userId,
       addressId,
       totalPrice,
       'pendente',
-      couponCodes.join(',') || null, // Armazena a lista de cupões
+      couponCodes.join(',') || null,
       paymentMethod,
       easypayId
     );
@@ -85,7 +106,6 @@ const checkout = async (req, res) => {
     const productsForEmail = [];
     for (const item of cartItems) {
       await orderModel.addOrderItem(order.id, item.variant_id, item.quantity, item.price);
-
       productsForEmail.push({
         name: item.product_name,
         flavor: item.flavor_name,
@@ -196,6 +216,7 @@ const checkout = async (req, res) => {
         ownerPaymentDetailsHtml = `<p>O cliente optou por pagamento à cobrança.</p>`;
     }
 
+
     // Envio de e-mail de notificação para o dono da loja
     const shopOwnerEmail = process.env.SHOP_OWNER_EMAIL;
     if (shopOwnerEmail) {
@@ -267,7 +288,7 @@ const checkout = async (req, res) => {
     res.status(201).json({
       message: 'Encomenda realizada com sucesso',
       orderId: order.id,
-      discountApplied: totalDiscount // Retorna o desconto total aplicado
+      discountApplied: totalDiscount
     });
 
   } catch (err) {
