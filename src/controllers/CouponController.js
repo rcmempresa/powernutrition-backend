@@ -45,52 +45,79 @@ const listCoupons = async (req, res) => {
 
 const applyCoupon = async (req, res) => {
     const { couponCodes, items } = req.body;
-    
+
     if (!couponCodes || !Array.isArray(couponCodes) || couponCodes.length === 0) {
         return res.status(400).json({ message: 'A lista de cupões é obrigatória.' });
     }
 
     try {
+        const uniqueCouponCodes = [...new Set(couponCodes)]; // Garante cupões únicos
+        const validCoupons = [];
+        const invalidCoupons = [];
+
+        // 1. Validar e buscar todos os cupões de uma vez
+        for (const code of uniqueCouponCodes) {
+            const coupon = await CouponModel.getCouponByCode(code);
+            if (coupon) {
+                validCoupons.push(coupon);
+            } else {
+                invalidCoupons.push(code);
+            }
+        }
+
+        if (invalidCoupons.length > 0) {
+            return res.status(404).json({
+                message: `O(s) cupão(ões) "${invalidCoupons.join(', ')}" não são válidos ou expiraram.`
+            });
+        }
+        
+        if (validCoupons.length === 0) {
+             return res.status(400).json({
+                message: 'Nenhum cupão válido foi fornecido.'
+            });
+        }
+
         let totalDiscount = 0;
         let eligibleItemFound = false;
-        const discountedItemIds = new Set(); 
+        const discountedItemIds = new Set();
+        const discountDetails = {};
 
-        for (const couponCode of couponCodes) {
-            const coupon = await CouponModel.getCouponByCode(couponCode);
-
-            if (!coupon) {
-                return res.status(404).json({ message: `O cupão "${couponCode}" não é válido ou expirou.` });
-            }
-
+        // 2. Calcular o desconto de cada cupão e aplicar aos itens elegíveis
+        for (const coupon of validCoupons) {
             const discountValue = parseFloat(coupon.discount_percentage);
-
+            
             const eligibleItemsForCoupon = items.filter(item => {
                 if (discountedItemIds.has(item.id)) {
                     return false;
                 }
-
+                
+                // Lógica de elegibilidade
                 if (!coupon.is_specific) {
-                    // O cupão geral só se aplica a itens sem original_price.
                     return item.original_price === null || item.original_price === undefined;
-                } 
-                else {
+                } else {
                     return item.product_id === coupon.product_id;
                 }
             });
 
             if (eligibleItemsForCoupon.length > 0) {
-                const currentCouponDiscount = eligibleItemsForCoupon.reduce((sum, item) => {
+                eligibleItemFound = true;
+                
+                eligibleItemsForCoupon.forEach(item => {
                     const priceForDiscount = (item.original_price !== null && item.original_price !== undefined)
                         ? parseFloat(item.original_price)
                         : item.price;
-                        
+                    
+                    const itemDiscount = priceForDiscount * item.quantity * (discountValue / 100);
+                    
+                    totalDiscount += itemDiscount;
                     discountedItemIds.add(item.id);
-
-                    return sum + (priceForDiscount * item.quantity * (discountValue / 100));
-                }, 0);
-
-                totalDiscount += currentCouponDiscount;
-                eligibleItemFound = true;
+                    
+                    // Armazena detalhes do desconto
+                    discountDetails[item.id] = {
+                        appliedCoupon: coupon.code,
+                        discountAmount: itemDiscount
+                    };
+                });
             }
         }
 
@@ -99,7 +126,8 @@ const applyCoupon = async (req, res) => {
                 message: 'Nenhum cupão se aplica a um produto elegível no seu carrinho.'
             });
         }
-
+        
+        // 3. Calcular subtotal e novo total
         const subtotalBeforeDiscount = items.reduce((sum, item) => {
             const priceToUse = (item.original_price !== null && item.original_price !== undefined)
                 ? parseFloat(item.original_price)
@@ -116,7 +144,8 @@ const applyCoupon = async (req, res) => {
         res.status(200).json({
             message: 'Cupões aplicados com sucesso!',
             discount: totalDiscount,
-            newTotal: newTotal
+            newTotal: newTotal,
+            discountedItems: discountDetails
         });
 
     } catch (err) {
