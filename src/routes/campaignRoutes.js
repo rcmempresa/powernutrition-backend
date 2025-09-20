@@ -34,7 +34,7 @@ router.post('/criar', async (req, res) => {
 router.get('/listar', async (req, res) => {
   try {
     const campaignsQuery = `
-      SELECT c.id, c.name, c.is_active,
+      SELECT c.id, c.name, c.is_active, c.image_url, -- ✨ Adicione esta linha
              json_agg(jsonb_build_object(
                  'id', p.id,
                  'name', p.name,
