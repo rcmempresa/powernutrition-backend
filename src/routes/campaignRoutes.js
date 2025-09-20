@@ -5,20 +5,27 @@ const pool = require('../config/db');
 
 // Rota para criar uma nova campanha (apenas para admin)
 router.post('/criar', async (req, res) => {
-  const { name, is_active } = req.body;
-  if (!name) {
-    return res.status(400).json({ message: 'O nome da campanha é obrigatório.' });
-  }
-
   try {
-    const newCampaign = await pool.query(
-      "INSERT INTO campaigns (name, is_active) VALUES ($1, $2) RETURNING *",
-      [name, is_active]
-    );
-    res.status(201).json(newCampaign.rows[0]);
-  } catch (err) {
-    console.error('Erro ao criar campanha:', err);
-    res.status(500).json({ message: 'Erro interno do servidor.' });
+    // 1. Desestrutura os dados enviados no corpo da requisição, incluindo a URL da imagem.
+    const { name, is_active, image_url } = req.body;
+
+    // 2. Cria a query SQL para inserir uma nova campanha.
+    // Usamos $1, $2, $3 para prevenir SQL Injection.
+    const query = `
+      INSERT INTO campaigns (name, is_active, image_url)
+      VALUES ($1, $2, $3)
+      RETURNING *;
+    `;
+    
+    // 3. Executa a query com os valores recebidos.
+    const result = await pool.query(query, [name, is_active, image_url]);
+
+    // 4. Responde com a nova campanha criada.
+    res.status(201).json(result.rows[0]);
+
+  } catch (error) {
+    console.error('Erro ao criar campanha:', error);
+    res.status(500).json({ message: 'Erro interno ao criar campanha.' });
   }
 });
 
@@ -112,7 +119,7 @@ router.delete('/:campaignId', async (req, res) => {
 router.get('/active', async (req, res) => {
   try {
     const campaignsQuery = `
-      SELECT id, name
+      SELECT id, name, image_url -- ✨ Adicione 'image_url' aqui
       FROM campaigns
       WHERE is_active = true
       ORDER BY id ASC
@@ -128,7 +135,6 @@ router.get('/active', async (req, res) => {
   p.description,
   p.image_url,
   p.category_id,
-  -- p.brand_name,  <-- REMOVER ESTA LINHA
   p.is_active,
   p.original_price,
   p.rating,
